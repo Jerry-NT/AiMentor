@@ -88,7 +88,6 @@ dependencies {
     // ktor
     implementation("io.ktor:ktor-client-android:3.0.0")
 
-    // cloudinary
-    implementation("com.cloudinary:cloudinary-http44:1.37.0")
-    implementation("com.cloudinary:kotlin-url-gen:1.7.0")
+    implementation ("com.cloudinary:cloudinary-android:3.0.2")
+
 }

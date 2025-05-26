@@ -1,26 +1,34 @@
 package com.example.aisupabase.cloudinary
 
+import com.cloudinary.Cloudinary
 import com.cloudinary.utils.ObjectUtils
-
 import com.example.aisupabase.config.CloudinaryClientProvider
 import java.io.File
 
 object CloudinaryService {
-    private val cloudinary = CloudinaryClientProvider.cloudinary
+    private val cloudinary: Cloudinary = CloudinaryClientProvider.getCloudinaryInstance()
 
-    // Upload file
-    fun uploadFile(file: File, folder: String? = null): Map<*, *> {
-        val options = if (folder != null) ObjectUtils.asMap("folder", folder) else ObjectUtils.emptyMap()
-        return cloudinary.uploader().upload(file, options)
+    // Upload ảnh (có thể truyền file hoặc đường dẫn file)
+    fun uploadImage(file: File, folder: String = "default_folder"): String? {
+        return try {
+            val uploadResult = cloudinary.uploader().upload(file, ObjectUtils.asMap(
+                "folder", folder
+            ))
+            uploadResult["secure_url"] as String
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
-    // Get file info by publicId
-    fun getFile(publicId: String): Map<*, *> {
-        return cloudinary.api().resource(publicId, ObjectUtils.emptyMap())
-    }
-
-    // Delete file
-    fun deleteFile(publicId: String): Map<*, *> {
-        return cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap())
+    // Xoá ảnh theo publicId
+    fun deleteImage(publicId: String): Boolean {
+        return try {
+            val result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap())
+            "ok" == result["result"]
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 }

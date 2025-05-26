@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,41 +43,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.aisupabase.R
-import com.example.aisupabase.auth.AuthViewModel
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
 import com.example.aisupabase.models.type_accounts
 import io.github.jan.supabase.auth.auth
-
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-@Composable
-fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
-    LoginScreen(navController)
-}
-@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun LoginScreen(navController: NavController) {
-    // Khai báo các biến state để lưu trữ giá trị nhập vào
+    LoginScreenContent(navController)
+}
+
+@SuppressLint("UnusedBoxWithConstraintsScope")
+@Composable
+fun LoginScreenContent(navController: NavController) {
+    // State variables
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    //state để kiểm tra trạng thái đăng nhập
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
-    val errorRed = Color(0xFFD32F2F)
-    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
 
-    // Màu xanh dương cho nút đăng ký và link đăng nhập
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Colors
+    val errorRed = Color(0xFFD32F2F)
     val primaryBlue = Color(0xFF4361EE)
 
-    // Sử dụng Box để đặt hình nền và nội dung chồng lên nhau
+    // Main layout
     Box(modifier = Modifier.fillMaxSize()) {
-        // Hình nền - sử dụng alpha để làm mờ hình nền nếu cần
+        // Background image
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = "Background",
@@ -84,9 +88,8 @@ fun LoginScreen(navController: NavController) {
             alpha = 0.5f
         )
 
-        // Bố cục chính - sử dụng BoxWithConstraints để tính toán vị trí chính xác
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize()) {
+        // Main content
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val screenHeight = maxHeight
 
             Column(
@@ -95,10 +98,9 @@ fun LoginScreen(navController: NavController) {
                     .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                // Phần tiêu đề - nằm ở trên cùng với padding từ trên xuống
-                Spacer(modifier = Modifier.height(screenHeight * 0.1f)) // 10% chiều cao màn hình
+                // Header section
+                Spacer(modifier = Modifier.height(screenHeight * 0.1f))
 
-                // Tiêu đề "Đăng ký"
                 Text(
                     text = "Đăng nhập",
                     fontSize = 24.sp,
@@ -106,7 +108,6 @@ fun LoginScreen(navController: NavController) {
                     color = Color.Black
                 )
 
-                // Phụ đề "Tạo tài khoản để tiếp tục!"
                 Text(
                     text = "Chào mừng đã quay lại!",
                     fontSize = 16.sp,
@@ -114,15 +115,14 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
-                // Spacer để đẩy các trường nhập liệu xuống giữa màn hình
-                Spacer(modifier = Modifier.height(screenHeight * 0.1f)) // 10% chiều cao màn hình
+                Spacer(modifier = Modifier.height(screenHeight * 0.1f))
 
-                // Phần form nhập liệu - nằm ở giữa màn hình
+                // Form section
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Trường nhập email
+                    // Email field
                     OutlinedTextField(
                         value = email,
                         onValueChange = {
@@ -140,15 +140,22 @@ fun LoginScreen(navController: NavController) {
                         ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         singleLine = true,
-                        isError = emailError != null
+                        isError = emailError != null,
+                        enabled = !isLoading
                     )
+
                     if (emailError != null) {
-                        Text(emailError!!, color = errorRed, fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
+                        Text(
+                            text = emailError!!,
+                            color = errorRed,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
                     } else {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // Trường nhập mật khẩu
+                    // Password field
                     OutlinedTextField(
                         value = password,
                         onValueChange = {
@@ -167,52 +174,86 @@ fun LoginScreen(navController: NavController) {
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
-                        isError = passwordError != null
+                        isError = passwordError != null,
+                        enabled = !isLoading
                     )
+
                     if (passwordError != null) {
-                        Text(passwordError!!, color = errorRed, fontSize = 12.sp, modifier = Modifier.padding(bottom = 16.dp))
+                        Text(
+                            text = passwordError!!,
+                            color = errorRed,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
                     } else {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
-                    // Nút đăng ký
+                    // Login button
                     Button(
                         onClick = {
-                            var valid = true
-                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                                emailError = "Email không hợp lệ"
-                                valid = false
-                            }
-                            if (password.length < 8) {
-                                passwordError = "Mật khẩu tối thiểu 8 ký tự"
-                                valid = false
-                            } else if (!password.any { it.isUpperCase() }) {
-                                passwordError = "Mật khẩu phải có ít nhất 1 chữ cái viết hoa"
-                                valid = false
-                            }
-                            if (valid) {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    login(email, password, navController, context)
+                            if (!isLoading) {
+                                var valid = true
+
+                                // Validate email
+                                if (email.isBlank()) {
+                                    emailError = "Email không được để trống"
+                                    valid = false
+                                } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                                    emailError = "Email không hợp lệ"
+                                    valid = false
+                                }
+
+                                // Validate password
+                                if (password.isBlank()) {
+                                    passwordError = "Mật khẩu không được để trống"
+                                    valid = false
+                                } else if (password.length < 8) {
+                                    passwordError = "Mật khẩu tối thiểu 8 ký tự"
+                                    valid = false
+                                } else if (!password.any { it.isUpperCase() }) {
+                                    passwordError = "Mật khẩu phải có ít nhất 1 chữ cái viết hoa"
+                                    valid = false
+                                }
+
+                                if (valid) {
+                                    isLoading = true
+                                    coroutineScope.launch {
+                                        login(
+                                            email = email,
+                                            password = password,
+                                            navController = navController,
+                                            context = context,
+                                            onLoadingChange = { isLoading = it }
+                                        )
+                                    }
                                 }
                             }
-
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryBlue
-                        )
+                            containerColor = if (isLoading) Color.Gray else primaryBlue
+                        ),
+                        enabled = !isLoading
                     ) {
-                        Text(
-                            text = "Đăng nhập",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.height(20.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Đăng nhập",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
-                    // Phần văn bản và liên kết đăng ky
+                    // Register link
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -226,65 +267,108 @@ fun LoginScreen(navController: NavController) {
                             fontSize = 14.sp
                         )
 
-                            Text(
-                                text = "Đăng ký",
-                                color = primaryBlue,
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(start = 4.dp)
-                                    .clickable {
-                                        navController.navigate("register")
-                                    }
-                            )
-
+                        Text(
+                            text = "Đăng ký",
+                            color = primaryBlue,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .clickable(enabled = !isLoading) {
+                                    navController.navigate("register")
+                                }
+                        )
                     }
                 }
             }
         }
     }
 }
+
 suspend fun login(
     email: String,
     password: String,
     navController: NavController,
-    context: Context
+    context: Context,
+    onLoadingChange: (Boolean) -> Unit
 ) {
     val supabase = SupabaseClientProvider.client
+
     try {
+        // Authenticate user
         val result = supabase.auth.signInWith(Email) {
             this.email = email
             this.password = password
         }
 
-        // Lấy thông tin người dùng từ Supabase
+        Log.d("Login", "Authentication successful: ${result.toString()}")
+
+        // Get user information
         val userList = supabase.postgrest["users"]
             .select {
                 filter { eq("email", email) }
             }
             .decodeList<Users>()
 
-        val user = userList.firstOrNull() ?: throw Exception("Không tìm thấy người dùng với email: $email")
+        val user = userList.firstOrNull()
+            ?: throw Exception("Không tìm thấy người dùng với email: $email")
 
-        // lay thông tin loại tài khoản từ Supabase
+        Log.d("Login", "User found: ${user.username}")
+
+        // Get account type information
         val typeList = supabase.postgrest["type_account"]
             .select {
                 filter { eq("id", user.id_type_account) }
             }
             .decodeList<type_accounts>()
 
-        val typeuser = typeList.firstOrNull() ?: throw Exception("Không tìm thấy loại tài khoản cho người dùng: ${user.username}")
+        val typeUser = typeList.firstOrNull()
+            ?: throw Exception("Không tìm thấy loại tài khoản cho người dùng: ${user.username}")
 
-        // Lưu thông tin người dùng vào SharedPreferences
-        authUser().saveUserSession(context, user.username, user.email, user.id, user.index_image, user.role.toString(), typeuser.type)
-            CoroutineScope(Dispatchers.Main).launch {
-                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+        Log.d("Login", "Account type found: ${typeUser.type}")
+
+        // Save user session
+        authUser().saveUserSession(
+            context = context,
+            username = user.username,
+            email = user.email,
+            id = user.id,
+            indexImage = user.index_image,
+            role = user.role.toString(),
+            typeAccount = typeUser.type
+        )
+
+        Log.d("Login", "User session saved successfully")
+
+        // Navigate to main screen on Main thread
+        withContext(Dispatchers.Main) {
+            onLoadingChange(false)
+            Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+
+            // Clear back stack and navigate to admin_home
+            navController.navigate("${user.role}_home") {
+                popUpTo(navController.graph.startDestinationId) {
+                    inclusive = true
+                }
+                launchSingleTop = true
             }
-
-    } catch (e: Exception) {
-        CoroutineScope(Dispatchers.Main).launch {
-            Log.d("Login", "Session: ${e.toString()}")
-            Toast.makeText(context, "Lỗi đăng nhập, vui lòng thử lại!", Toast.LENGTH_SHORT).show()
         }
 
+    } catch (e: Exception) {
+        Log.e("Login", "Login error: ${e.message}", e)
+
+        withContext(Dispatchers.Main) {
+            onLoadingChange(false)
+            val errorMessage = when {
+                e.message?.contains("Invalid login credentials") == true ->
+                    "Email hoặc mật khẩu không chính xác"
+                e.message?.contains("network") == true ->
+                    "Lỗi kết nối mạng, vui lòng kiểm tra internet"
+                e.message?.contains("timeout") == true ->
+                    "Kết nối bị timeout, vui lòng thử lại"
+                else -> "Lỗi đăng nhập: ${e.message}"
+            }
+            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+        }
     }
 }

@@ -35,9 +35,7 @@ import com.example.aisupabase.models.Users
 // Main activity
 @Composable
 fun RegisterScreen(navController: NavController) {
-
         RegistrationScreen(navController)
-
 }
 
 // view and function register

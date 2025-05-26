@@ -1,7 +1,6 @@
 package com.example.aisupabase.config
 
-import com.cloudinary.Cloudinary
-import com.cloudinary.utils.ObjectUtils
+import com.cloudinary.android.MediaManager
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -28,13 +27,14 @@ object SupabaseClientProvider {
 }
 
 object CloudinaryClientProvider {
-    val cloudinary: Cloudinary by lazy {
-        Cloudinary(
-            ObjectUtils.asMap(
-                "cloud_name", NativeKeys.CloudinaryCloudName(),
-                "api_key", NativeKeys.CloudinaryKey(),
-                "api_secret", NativeKeys.CloudinarySecret()
-            )
+    fun initCloudinary(context: android.content.Context) {
+        val config = hashMapOf(
+            "cloud_name" to  NativeKeys.CloudinaryCloudName(),
+            "api_key" to NativeKeys.CloudinaryKey(),
+            "api_secret" to NativeKeys.CloudinarySecret()
         )
+        MediaManager.init(context, config)
     }
+
+    fun getCloudinaryInstance() = MediaManager.get().cloudinary
 }

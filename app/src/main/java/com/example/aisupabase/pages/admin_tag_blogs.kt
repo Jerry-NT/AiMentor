@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import androidx.navigation.NavController
 import com.example.aisupabase.controllers.TagRepository
 import com.example.aisupabase.models.Tags
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import io.github.jan.supabase.SupabaseClient
@@ -137,10 +139,16 @@ class TagViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvi
 @Composable
 fun Admin_Tag_Blogs(navController: NavController) {
     // xử lý logic xác thực người dùng, kiểm tra quyền truy cập, v.v.
+    val context = LocalContext.current
     LaunchedEffect(Unit) {
-
+        val session = authUser().getUserSession(context)
+        val role = session["role"] as? String
+        val username = session["username"] as? String
+        if (username == null || role != "admin") {
+            authUser().clearUserSession(context)
+            navController.navigate("login");
+        }
     }
-
     val supabase = SupabaseClientProvider.client
     TagManagementApp(supabase)
 }

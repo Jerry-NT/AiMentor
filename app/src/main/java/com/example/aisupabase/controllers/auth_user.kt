@@ -38,4 +38,12 @@ public class authUser{
             "type_account" to sharedPref.getString("type_account", null)
         )
     }
+
+    fun clearUserSession(context: Context) {
+        val sharedPref = context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            clear()
+            apply()
+        }
+    }
 }

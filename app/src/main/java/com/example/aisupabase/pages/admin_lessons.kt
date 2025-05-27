@@ -9,7 +9,7 @@ import com.example.aisupabase.controllers.authUser
 
 //  Main Activity
 @Composable
-fun Admin_Lessions( navController: NavController) {
+fun Admin_Lessons( navController: NavController) {
     // xử lý logic xác thực người dùng, kiểm tra quyền truy cập, v.v.
     val context = LocalContext.current
     LaunchedEffect(Unit) {

@@ -1,7 +1,7 @@
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class lessions(
+data class lessons(
     val id: Int? = null,
     val id_course: Int,
     val title_lession: String,

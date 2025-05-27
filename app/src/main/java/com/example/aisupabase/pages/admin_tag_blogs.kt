@@ -25,27 +25,27 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.controllers.TagRepository
+import com.example.aisupabase.controllers.TagResult
 import com.example.aisupabase.models.Tags
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import io.github.jan.supabase.SupabaseClient
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-
-// ViewModel
+// Viewmodel sử dụng để quản lý trạng thái của danh sách tags -> CRUD operations
 class TagViewModel(private val repository: TagRepository) : ViewModel() {
-    private val _tagList = MutableStateFlow<List<Tags>>(listOf())
-    val tagList: Flow<List<Tags>> = _tagList
+    private val _tagList = MutableStateFlow<List<Tags>>(emptyList())
+    val tagList: StateFlow<List<Tags>> = _tagList
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: Flow<Boolean> = _isLoading
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
-    val error: Flow<String?> = _error
+    val error: StateFlow<String?> = _error
 
     init {
         getTags()
@@ -55,15 +55,11 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            try {
-                val tags = repository.getTags()
-                _tagList.value = tags
-                Log.d("TagViewModel", "Tags fetched: $tags")
-            } catch (e: Exception) {
-                _error.value = "Failed to load tags: ${e.message}"
-            } finally {
-                _isLoading.value = false
+            when (val result = repository.getTags()) {
+                is TagResult.Success -> _tagList.value = result.data ?: emptyList()
+                is TagResult.Error -> _error.value = "Failed to load tags: ${result.exception.message}"
             }
+            _isLoading.value = false
         }
     }
 
@@ -71,18 +67,11 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            try {
-                val success = repository.deleteTag(tag.id.toString())
-                if (success) {
-                    getTags() // Refresh the list after deletion
-                } else {
-                    _error.value = "Failed to delete tag"
-                }
-            } catch (e: Exception) {
-                _error.value = "Error deleting tag: ${e.message}"
-            } finally {
-                _isLoading.value = false
+            when (val result = repository.deleteTag(tag.id.toString())) {
+                is TagResult.Success -> getTags()
+                is TagResult.Error -> _error.value = "Failed to delete tag: ${result.exception.message}"
             }
+            _isLoading.value = false
         }
     }
 
@@ -90,18 +79,11 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            try {
-                val success = repository.updateTag(id, title)
-                if (success) {
-                    getTags() // Refresh the list after update
-                } else {
-                    _error.value = "Failed to update tag"
-                }
-            } catch (e: Exception) {
-                _error.value = "Error updating tag: ${e.message}"
-            } finally {
-                _isLoading.value = false
+            when (val result = repository.updateTag(id, title)) {
+                is TagResult.Success -> getTags()
+                is TagResult.Error -> _error.value = "Failed to update tag: ${result.exception.message}"
             }
+            _isLoading.value = false
         }
     }
 
@@ -109,23 +91,16 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            try {
-                val success = repository.addTag(title)
-                if (success) {
-                    getTags() // Refresh the list after adding
-                } else {
-                    _error.value = "Failed to add tag"
-                }
-            } catch (e: Exception) {
-                _error.value = "Error adding tag: ${e.message}"
-            } finally {
-                _isLoading.value = false
+            when (val result = repository.addTag(title)) {
+                is TagResult.Success -> getTags()
+                is TagResult.Error -> _error.value = "Failed to add tag: ${result.exception.message}"
             }
+            _isLoading.value = false
         }
     }
 }
 
-// ViewModel Factory
+// ViewModel Factory sử dụng để tạo TagViewModel với SupabaseClient
 class TagViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TagViewModel::class.java)) {
@@ -138,7 +113,6 @@ class TagViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvi
 //  Main Activity
 @Composable
 fun Admin_Tag_Blogs(navController: NavController) {
-    // xử lý logic xác thực người dùng, kiểm tra quyền truy cập, v.v.
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val session = authUser().getUserSession(context)
@@ -146,21 +120,30 @@ fun Admin_Tag_Blogs(navController: NavController) {
         val username = session["username"] as? String
         if (username == null || role != "admin") {
             authUser().clearUserSession(context)
-            navController.navigate("login");
+            navController.navigate("login")
         }
     }
     val supabase = SupabaseClientProvider.client
     TagManagementApp(supabase)
 }
 
+// Validation function for tag title
+private fun isValidTagTitle(title: String): Boolean {
+    val trimmed = title.trim()
+    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$")
+    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
+}
 
 // CRUD view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))) {
-    val tags by viewModel.tagList.collectAsState(initial = emptyList())
-    val isLoading by viewModel.isLoading.collectAsState(initial = false)
-    val error by viewModel.error.collectAsState(initial = null)
+fun TagManagementApp(
+    supabase: SupabaseClient,
+    viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))
+) {
+    val tags by viewModel.tagList.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -175,15 +158,9 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                     Button(
                         onClick = { showAddDialog = true },
                         modifier = Modifier.padding(end = 16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Blue
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Blue)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Thêm", color = Color.White)
                     }
@@ -196,12 +173,9 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else {
-                if (error != null) {
+            when {
+                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                error != null -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -214,16 +188,16 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                             color = Color.Red,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
-                        Button(onClick = { viewModel.getTags() }) {
-                            Text("Retry")
-                        }
+                        Button(onClick = { viewModel.getTags() }) { Text("Retry") }
                     }
-                } else {
+                }
+                else -> {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp)
                     ) {
+
                         item {
                             Row(
                                 modifier = Modifier
@@ -231,28 +205,13 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                     .padding(bottom = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = "ID",
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = "Tên sản phẩm",
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(2f)
-                                )
-                                Text(
-                                    text = "Thao tác",
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f),
-                                    textAlign = TextAlign.Center
-                                )
+                                Text("ID", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                Text("Tên sản phẩm", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f))
+                                Text("Thao tác", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
                             }
                             Divider()
                         }
-
                         items(tags) { tag ->
-
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -260,14 +219,8 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = tag.id.toString(),
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    text = tag.title_tag,
-                                    modifier = Modifier.weight(2f)
-                                )
+                                Text(tag.id.toString(), modifier = Modifier.weight(1f))
+                                Text(tag.title_tag, modifier = Modifier.weight(2f))
                                 Row(
                                     modifier = Modifier.weight(1f),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -277,26 +230,17 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                             selectedTag = tag
                                             showUpdateDialog = true
                                         },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Blue
-                                        ),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Blue),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Sửa", color = Color.White)
-                                    }
-
+                                    ) { Text("Sửa", color = Color.White) }
                                     Button(
                                         onClick = {
                                             selectedTag = tag
                                             showDeleteDialog = true
                                         },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Red
-                                        ),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Red),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Xóa", color = Color.White)
-                                    }
+                                    ) { Text("Xóa", color = Color.White) }
                                 }
                             }
                             Divider()
@@ -315,6 +259,7 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         var tagTitle by remember { mutableStateOf("") }
+                        var errorMsg by remember { mutableStateOf<String?>(null) }
 
                         Column(
                             modifier = Modifier
@@ -326,63 +271,48 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Thêm tag",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-
+                                Text("Thêm tag", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                 IconButton(onClick = { showAddDialog = false }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Close"
-                                    )
+                                    Icon(Icons.Default.Close, contentDescription = "Close")
                                 }
                             }
-
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = "Tiêu đề",
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-
+                            Text("Tiêu đề", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                             OutlinedTextField(
                                 value = tagTitle,
-                                onValueChange = { tagTitle = it },
+                                onValueChange = {
+                                    tagTitle = it
+                                    errorMsg = null
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text("Nhập tiêu đề") },
-                                singleLine = true
+                                singleLine = true,
+                                isError = errorMsg != null
                             )
-
+                            if (errorMsg != null) {
+                                Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
+                            }
                             Spacer(modifier = Modifier.height(24.dp))
-
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Button(
                                     onClick = {
-                                        if (tagTitle.isNotBlank()) {
-                                            viewModel.addTag(tagTitle)
+                                        if (!isValidTagTitle(tagTitle)) {
+                                            errorMsg = "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                        } else {
+                                            viewModel.addTag(tagTitle.trim())
                                             showAddDialog = false
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Blue
-                                    )
-                                ) {
-                                    Text("Thêm", color = Color.White)
-                                }
-
+                                    colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                                ) { Text("Thêm", color = Color.White) }
                                 OutlinedButton(
                                     onClick = { showAddDialog = false },
                                     modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Hủy")
-                                }
+                                ) { Text("Hủy") }
                             }
                         }
                     }
@@ -399,6 +329,7 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         var tagTitle by remember { mutableStateOf(selectedTag!!.title_tag) }
+                        var errorMsg by remember { mutableStateOf<String?>(null) }
 
                         Column(
                             modifier = Modifier
@@ -410,62 +341,47 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Cập nhập tag",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-
+                                Text("Cập nhập tag", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                 IconButton(onClick = { showUpdateDialog = false }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Close"
-                                    )
+                                    Icon(Icons.Default.Close, contentDescription = "Close")
                                 }
                             }
-
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = "Tiêu đề",
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-
+                            Text("Tiêu đề", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                             OutlinedTextField(
                                 value = tagTitle,
-                                onValueChange = { tagTitle = it },
+                                onValueChange = {
+                                    tagTitle = it
+                                    errorMsg = null
+                                },
                                 modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
+                                singleLine = true,
+                                isError = errorMsg != null
                             )
-
+                            if (errorMsg != null) {
+                                Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
+                            }
                             Spacer(modifier = Modifier.height(24.dp))
-
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Button(
                                     onClick = {
-                                        if (tagTitle.isNotBlank()) {
-                                            viewModel.updateTag(selectedTag!!.id.toString(), tagTitle)
+                                        if (!isValidTagTitle(tagTitle)) {
+                                            errorMsg = "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                        } else {
+                                            viewModel.updateTag(selectedTag!!.id.toString(), tagTitle.trim())
                                             showUpdateDialog = false
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Blue
-                                    )
-                                ) {
-                                    Text("Cập nhập", color = Color.White)
-                                }
-
+                                    colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                                ) { Text("Cập nhập", color = Color.White) }
                                 OutlinedButton(
                                     onClick = { showUpdateDialog = false },
                                     modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Hủy")
-                                }
+                                ) { Text("Hủy") }
                             }
                         }
                     }
@@ -487,19 +403,8 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                 .padding(16.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
-                            Text(
-                                text = "Xác nhận xóa",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-
-                            Text(
-                                text = "Bạn có thực sự muốn xóa ?",
-                                fontSize = 16.sp,
-                                modifier = Modifier.padding(bottom = 24.dp)
-                            )
-
+                            Text("Xác nhận xóa", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+                            Text("Bạn có thực sự muốn xóa ?", fontSize = 16.sp, modifier = Modifier.padding(bottom = 24.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -510,19 +415,12 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
                                         showDeleteDialog = false
                                     },
                                     modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Red
-                                    )
-                                ) {
-                                    Text("Xóa", color = Color.White)
-                                }
-
+                                    colors = ButtonDefaults.buttonColors(containerColor = Red)
+                                ) { Text("Xóa", color = Color.White) }
                                 OutlinedButton(
                                     onClick = { showDeleteDialog = false },
                                     modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Hủy")
-                                }
+                                ) { Text("Hủy") }
                             }
                         }
                     }
@@ -531,4 +429,3 @@ fun TagManagementApp( supabase: SupabaseClient, viewModel: TagViewModel = viewMo
         }
     }
 }
-

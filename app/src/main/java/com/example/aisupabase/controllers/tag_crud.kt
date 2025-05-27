@@ -3,41 +3,50 @@ package com.example.aisupabase.controllers
 import com.example.aisupabase.models.Tags
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// Result wrapper for CRUD operations
+sealed class TagResult<out T> {
+    data class Success<T>(val data: T?, val raw: PostgrestResult? = null) : TagResult<T>()
+    data class Error(val exception: Exception, val raw: PostgrestResult? = null) : TagResult<Nothing>()
+}
+
 // 2. Repository
 class TagRepository(private val supabase: SupabaseClient) {
-//lay
-    suspend fun getTags(): List<Tags> = withContext(Dispatchers.IO) {
+    // Lấy danh sách tags
+    suspend fun getTags(): TagResult<List<Tags>> = withContext(Dispatchers.IO) {
         try {
-            return@withContext supabase.postgrest["tag"]
-                .select()
-                .decodeList<Tags>()
+            val result = supabase.postgrest["tags"].select()
+            val tags = result.decodeList<Tags>()
+            return@withContext TagResult.Success(tags, result)
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext emptyList()
+            return@withContext TagResult.Error(e)
         }
     }
-//xoa_id
-    suspend fun deleteTag(id: String) = withContext(Dispatchers.IO) {
+
+    // Xóa theo id
+    suspend fun deleteTag(id: String): TagResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            supabase.postgrest["tag"]
+            val result = supabase.postgrest["tags"]
                 .delete {
                     filter {
                         eq("id", id)
                     }
                 }
-            return@withContext true
+            return@withContext TagResult.Success(Unit, result)
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext false
+            return@withContext TagResult.Error(e)
         }
     }
-//update_id
-    suspend fun updateTag(id: String, title: String) = withContext(Dispatchers.IO) {
+
+    // Cập nhật theo id
+    suspend fun updateTag(id: String, title: String): TagResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            supabase.postgrest["tag"]
+            val result = supabase.postgrest["tags"]
                 .update({
                     set("title_tag", title)
                 }) {
@@ -45,23 +54,22 @@ class TagRepository(private val supabase: SupabaseClient) {
                         eq("id", id)
                     }
                 }
-            return@withContext true
+            return@withContext TagResult.Success(Unit, result)
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext false
+            return@withContext TagResult.Error(e)
         }
     }
-//them
-    suspend fun addTag(title: String): Boolean = withContext(Dispatchers.IO) {
+
+    // Thêm mới
+    suspend fun addTag(title: String): TagResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val result = supabase.postgrest["tag"]
+            val result = supabase.postgrest["tags"]
                 .insert(mapOf("title_tag" to title))
-
-            return@withContext true
+            return@withContext TagResult.Success(Unit, result)
         } catch (e: Exception) {
             e.printStackTrace()
-            return@withContext false
+            return@withContext TagResult.Error(e)
         }
     }
-
 }

@@ -316,7 +316,7 @@ suspend fun login(
         Log.d("Login", "User found: ${user.username}")
 
         // Get account type information
-        val typeList = supabase.postgrest["type_account"]
+        val typeList = supabase.postgrest["type_accounts"]
             .select {
                 filter { eq("id", user.id_type_account) }
             }

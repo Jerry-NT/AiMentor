@@ -1,5 +1,6 @@
 package com.example.aisupabase.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,10 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aisupabase.R
+
 // Data class cho menu items
 data class MenuItem(
     val id: String,
@@ -210,23 +215,60 @@ fun AdminDashboard(
     navController: NavController,
     modifier: Modifier = Modifier,
     menuItems: List<MenuItem> = defaultMenuItems(navController)
-)
-{
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-    ) {
-        // Header với gradient
-        HeaderSection()
+) {
+    val context = LocalContext.current
 
-        // Grid menu items
-        MenuGrid(
-            items = menuItems,
+    Scaffold(
+        bottomBar = {
+            Button(
+                onClick = {
+                    authUser().clearUserSession(context)
+                    navController.navigate("login") {
+                        popUpTo("admin_home") { inclusive = true }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
+            ) {
+                Text(
+                    text = "Đăng xuất",
+                    modifier = Modifier.padding(start = 8.dp),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White
+                )
+            }
+        },
+        modifier = modifier
+    ) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-        )
+                .padding(paddingValues)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.background),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.5f
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent) // Keep content transparent
+            ) {
+                HeaderSection()
+                MenuGrid(
+                    items = menuItems,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
+        }
     }
 }
 

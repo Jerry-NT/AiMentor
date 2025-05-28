@@ -1,10 +1,14 @@
 package com.example.aisupabase.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,11 +32,26 @@ fun ClientHomeScreen(navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    Text(
-        text = "Đây là client home",
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-    )
+    Button(
+        onClick = {
+            authUser().clearUserSession(context)
+            navController.navigate("login") {
+                popUpTo("admin_home") { inclusive = true }
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
+    ) {
+        Text(
+            text = "Đăng xuất",
+            modifier = Modifier.padding(start = 8.dp),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White
+        )
+    }
 }
 
 

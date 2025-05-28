@@ -39,10 +39,12 @@ fun RegisterScreen(navController: NavController) {
 }
 
 // view and function register
-
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun RegistrationScreen(navController: NavController) {
+fun RegistrationScreen(
+    navController: NavController,
+
+) {
     // Khai báo các biến state để lưu trữ giá trị nhập vào
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -56,7 +58,7 @@ fun RegistrationScreen(navController: NavController) {
     var passwordError by remember { mutableStateOf<String?>(null) }
     val errorRed = Color(0xFFD32F2F)
     val context = LocalContext.current
-
+    var isLoading by remember { mutableStateOf(false) }
     // Màu xanh dương cho nút đăng ký và link đăng nhập
     val primaryBlue = Color(0xFF4361EE)
 
@@ -216,6 +218,7 @@ fun RegistrationScreen(navController: NavController) {
                     // Nút đăng ký
                     Button(
                         onClick = {
+                            if (!isLoading) {
                             // Validate
                             var valid = true
                             if (fullName.length < 8) {
@@ -241,8 +244,10 @@ fun RegistrationScreen(navController: NavController) {
                                 passwordError = "Mật khẩu phải có ít nhất 1 chữ cái viết hoa"
                                 valid = false
                             }
+                            isLoading = true
                             if (valid) {
-                                Register(context,email, fullName, password, phoneNumber)
+                                Register(context,email, fullName, password, phoneNumber,onLoadingChange = { isLoading = it })
+                            }
                             }
                         },
                         modifier = Modifier
@@ -253,11 +258,18 @@ fun RegistrationScreen(navController: NavController) {
                             containerColor = primaryBlue
                         )
                     ) {
-                        Text(
-                            text = "Đăng ký",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.height(20.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Đăng ký",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
                 // chuyển hướng đăng nhập
@@ -291,14 +303,15 @@ fun RegistrationScreen(navController: NavController) {
         }
     }
 }
-
+@SuppressLint("UnusedBoxWithConstraintsScope")
 fun Register(
     context: Context,
     email: String,
     fullName: String,
     password: String,
-    phoneNumber: String
-): String {
+    phoneNumber: String,
+    onLoadingChange: (Boolean) -> Unit
+){
     val supabase = SupabaseClientProvider.client
     CoroutineScope(Dispatchers.IO).launch {
         try {
@@ -318,19 +331,21 @@ fun Register(
                 supabase.postgrest["users"].insert(newUser)
                 // Đăng ký thành công, có thể show toast nếu muốn
                 CoroutineScope(Dispatchers.Main).launch {
+                    onLoadingChange(false)
                     Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 CoroutineScope(Dispatchers.Main).launch {
+                    onLoadingChange(false)
                     Toast.makeText(context, "Email đã tồn tại hoặc không hợp lệ!", Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
             CoroutineScope(Dispatchers.Main).launch {
+                onLoadingChange(false)
                 Toast.makeText(context, "Email đã tồn tại hoặc không hợp lệ!", Toast.LENGTH_SHORT).show()
             }
         }
     }
-    return ("Provide the return value")
 }
 

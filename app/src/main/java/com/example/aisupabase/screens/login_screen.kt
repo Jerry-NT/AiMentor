@@ -25,6 +25,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,7 +58,32 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun LoginScreen(navController: NavController) {
-    LoginScreenContent(navController)
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val session = authUser().getUserSession(context)
+        val role = session["role"] as? String
+        val username = session["username"] as? String
+        if (username.toString() != "null" && role != null) {
+            navController.navigate("${role}_home") {
+                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+        isLoading = false
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        LoginScreenContent(navController)
+    }
 }
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
@@ -230,6 +256,7 @@ fun LoginScreenContent(navController: NavController) {
                                 }
                             }
                         },
+
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

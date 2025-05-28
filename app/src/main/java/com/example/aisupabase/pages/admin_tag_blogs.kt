@@ -1,9 +1,11 @@
 package com.example.aisupabase.pages
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -13,7 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.aisupabase.R
 import com.example.aisupabase.controllers.TagRepository
 import com.example.aisupabase.controllers.TagResult
 import com.example.aisupabase.models.Tags
@@ -149,101 +154,121 @@ fun TagManagementApp(
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedTag by remember { mutableStateOf<Tags?>(null) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Admin Dashboard") },
-                actions = {
-                    Button(
-                        onClick = { showAddDialog = true },
-                        modifier = Modifier.padding(end = 16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Blue)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm", color = Color.White)
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when {
-                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = error ?: "Unknown error",
-                            color = Color.Red,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        Button(onClick = { viewModel.getTags() }) { Text("Retry") }
-                    }
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                    ) {
-
-                        item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("ID", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                                Text("Tên sản phẩm", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f))
-                                Text("Thao tác", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                            }
-                            Divider()
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Admin Dashboard") },
+                    actions = {
+                        Button(
+                            onClick = { showAddDialog = true },
+                            modifier = Modifier.padding(end = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Thêm", color = Color.White)
                         }
-                        items(tags) { tag ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(tag.id.toString(), modifier = Modifier.weight(1f))
-                                Text(tag.title_tag, modifier = Modifier.weight(2f))
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.background),
+                    contentDescription = "Background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.5f
+                )
+                when {
+                    // xử lý trạng thái loading
+                    isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    error != null -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = error ?: "Unknown error",
+                                color = Color.Red,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            Button(onClick = { viewModel.getTags() }) { Text("Retry") }
+                        }
+                    }
+                    // render danh sách tags
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            itemsIndexed(tags) { index, tag ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
                                 ) {
-                                    Button(
-                                        onClick = {
-                                            selectedTag = tag
-                                            showUpdateDialog = true
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Blue),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                    ) { Text("Sửa", color = Color.White) }
-                                    Button(
-                                        onClick = {
-                                            selectedTag = tag
-                                            showDeleteDialog = true
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Red),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                    ) { Text("Xóa", color = Color.White) }
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        // Số thứ tự
+                                        Text(
+                                            text = "Số thứ tự: ${index + 1}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+
+                                        // Tiêu đề
+                                        Text(
+                                            text = "Tiêu đề: ${tag.title_tag}",
+                                            fontSize = 14.sp,
+                                            modifier = Modifier.padding(bottom = 16.dp)
+                                        )
+
+                                        // Thao tác
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Button(
+                                                onClick = {
+                                                    selectedTag = tag
+                                                    showUpdateDialog = true
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Sửa", color = Color.White)
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    selectedTag = tag
+                                                    showDeleteDialog = true
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Red),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text("Xóa", color = Color.White)
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                            Divider()
                         }
                     }
                 }
@@ -277,7 +302,11 @@ fun TagManagementApp(
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Tiêu đề", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                            Text(
+                                "Tiêu đề",
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
                             OutlinedTextField(
                                 value = tagTitle,
                                 onValueChange = {
@@ -300,7 +329,8 @@ fun TagManagementApp(
                                 Button(
                                     onClick = {
                                         if (!isValidTagTitle(tagTitle)) {
-                                            errorMsg = "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                            errorMsg =
+                                                "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                         } else {
                                             viewModel.addTag(tagTitle.trim())
                                             showAddDialog = false
@@ -347,7 +377,11 @@ fun TagManagementApp(
                                 }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Tiêu đề", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                            Text(
+                                "Tiêu đề",
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
                             OutlinedTextField(
                                 value = tagTitle,
                                 onValueChange = {
@@ -369,9 +403,13 @@ fun TagManagementApp(
                                 Button(
                                     onClick = {
                                         if (!isValidTagTitle(tagTitle)) {
-                                            errorMsg = "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                            errorMsg =
+                                                "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                         } else {
-                                            viewModel.updateTag(selectedTag!!.id.toString(), tagTitle.trim())
+                                            viewModel.updateTag(
+                                                selectedTag!!.id.toString(),
+                                                tagTitle.trim()
+                                            )
                                             showUpdateDialog = false
                                         }
                                     },
@@ -403,8 +441,17 @@ fun TagManagementApp(
                                 .padding(16.dp),
                             horizontalAlignment = Alignment.Start
                         ) {
-                            Text("Xác nhận xóa", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
-                            Text("Bạn có thực sự muốn xóa ?", fontSize = 16.sp, modifier = Modifier.padding(bottom = 24.dp))
+                            Text(
+                                "Xác nhận xóa",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            Text(
+                                "Bạn có thực sự muốn xóa ?",
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(bottom = 24.dp)
+                            )
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -428,4 +475,4 @@ fun TagManagementApp(
             }
         }
     }
-}
+

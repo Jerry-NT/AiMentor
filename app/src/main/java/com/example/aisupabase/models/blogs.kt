@@ -6,7 +6,7 @@ data class blogs(
     val title_blog:String,
     val public_id_image: String,
     val url_image: String,
-    val id_tag: Int,
+    val id_tag: Int, //tags
     val content_blog: String,
     val created_at: String? = null,
 )

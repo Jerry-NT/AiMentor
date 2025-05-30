@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
                 composable("admin_courses") { Admin_Courses(navController) }
                 composable("admin_lessons") { Admin_Lessons(navController) }
                 composable("admin_roadmaps") { Admin_Roadmaps(navController) }
-                composable("admin_user_invoids") { Admin_User_Invoids(navController) }
+                composable("admin_user_invoices") { Admin_User_Invoids(navController) }
                 composable("admin_users") { Admin_Users(navController) }
                 composable("admin_type_accounts") { Admin_Type_Accounts(navController) }
                 composable("admin_question") { Admin_Questions(navController) }

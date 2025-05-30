@@ -202,7 +202,7 @@ private fun defaultMenuItems(navController: NavController): List<MenuItem> {
             id = "user_management_8",
             title = "Quản lý Hóa đơn",
             icon = Icons.Default.AccountBox,
-            onClick = { navController.navigate("admin_user_invoids") }
+            onClick = { navController.navigate("admin_user_invoices") }
         )
 
     )

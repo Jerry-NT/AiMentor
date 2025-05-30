@@ -9,5 +9,6 @@ data class courses(
     val public_id_image: String,
     val url_image: String,
     val is_private: Boolean,
+    val user_create: Int, // users
     val created_at: String? = null,
 )

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
@@ -174,6 +175,7 @@ fun AdminUsersScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
 
                             ) {

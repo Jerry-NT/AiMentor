@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.config.SupabaseClientProvider.client

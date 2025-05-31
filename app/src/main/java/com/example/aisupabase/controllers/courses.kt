@@ -23,7 +23,6 @@ class CourseRepository(private val supabase: SupabaseClient) {
     suspend fun addCourse(
         title_course: String,
         des_course: String,
-        lession_total: Int,
         public_id_image: String,
         url_image: String,
         is_private: Boolean,
@@ -33,7 +32,6 @@ class CourseRepository(private val supabase: SupabaseClient) {
             val data = mapOf(
                 "title_course" to title_course,
                 "des_course" to des_course,
-                "lession_total" to lession_total,
                 "public_id_image" to public_id_image,
                 "url_image" to url_image,
                 "is_private" to is_private,
@@ -50,21 +48,15 @@ class CourseRepository(private val supabase: SupabaseClient) {
         id: Int,
         title_course: String,
         des_course: String,
-        lession_total: Int,
         public_id_image: String,
         url_image: String,
-        is_private: Boolean,
-        user_create: Int
     ): CourseResult {
         return try {
             val data = mapOf(
                 "title_course" to title_course,
                 "des_course" to des_course,
-                "lession_total" to lession_total,
                 "public_id_image" to public_id_image,
-                "url_image" to url_image,
-                "is_private" to is_private,
-                "user_create" to user_create
+                "url_image" to url_image
             )
             supabase.from("courses").update(data) {
                 filter { eq("id", id) }

@@ -5,10 +5,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -17,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -25,12 +29,15 @@ import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.*
 import com.example.aisupabase.controllers.authUser
+import com.example.aisupabase.models.Users
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import courses
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.collections.firstOrNull
 
 // ViewModel
 class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
@@ -200,6 +207,7 @@ fun CourseManagementApp(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // fillter course public -> tu viet
                         itemsIndexed(coursesList) { index, course ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -212,9 +220,8 @@ fun CourseManagementApp(
                                     Text("Số thứ tự: ${index + 1}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                     Text("Tiêu đề: ${course.title_course}", fontSize = 14.sp)
                                     Text("Mô tả: ${course.des_course}", fontSize = 14.sp)
-                                    Text("Riêng tư: ${if (course.is_private) "Có" else "Không"}", fontSize = 14.sp)
-                                    Text("Người tạo (ID): ${course.user_create}", fontSize = 14.sp)
-
+                                    UsersText(supabase, course.user_create)
+                                    // hien thi lo trinh id_roadmaps
                                     AsyncImage(
                                         model = course.url_image,
                                         contentDescription = "Ảnh khóa học",
@@ -261,5 +268,7 @@ fun CourseManagementApp(
                 }
             }
         }
+
+
     }
 }

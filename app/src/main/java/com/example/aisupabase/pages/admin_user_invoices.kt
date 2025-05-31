@@ -241,19 +241,19 @@ fun UsersText(supabase: SupabaseClient, id: Int) {
     }
 
     Text(
-            text = "Họ và tên: ${users?.username ?: "Unknown"}",
-            fontSize = 14.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        text = "Họ và tên: ${users?.username ?: "Unknown"}",
+        fontSize = 14.sp,
+        modifier = Modifier.padding(bottom = 16.dp)
+    )
 
 }
 
 suspend fun getuserbyid(supabase: SupabaseClient, id: Int): Users?{
     // Lấy thông tin người dùng theo ID
-   val userlist=supabase.postgrest["users"]
-       .select{
-           filter { eq("id",id) }
-       }
-       .decodeList<Users>()
+    val userlist=supabase.postgrest["users"]
+        .select{
+            filter { eq("id",id) }
+        }
+        .decodeList<Users>()
     return userlist.firstOrNull()
 }

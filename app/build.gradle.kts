@@ -87,6 +87,8 @@ dependencies {
 
     // ktor
     implementation("io.ktor:ktor-client-android:3.0.0")
+    // Coil cho Jetpack Compose
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
     implementation ("com.cloudinary:cloudinary-android:3.0.2")
 

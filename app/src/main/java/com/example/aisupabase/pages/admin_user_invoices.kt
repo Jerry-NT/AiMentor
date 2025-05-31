@@ -74,6 +74,7 @@ class InvoiceViewModel(private val repository: invoicesRepository) : ViewModel()
             when (val result = repository.getInvoice()) {
                 is InvoiceResult.Success -> _invoices.value = result.data ?: emptyList()
                 is InvoiceResult.Error -> _error.value = "Failed to load tags: ${result.exception.message}"
+                else ->{}
             }
             _isLoading.value = false
         }

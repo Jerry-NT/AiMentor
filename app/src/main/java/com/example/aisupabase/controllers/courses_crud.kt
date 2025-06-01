@@ -82,6 +82,7 @@
 
 package com.example.aisupabase.controllers
 
+import android.R.id
 import courses
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
@@ -89,6 +90,8 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock.System.now
+import kotlin.toString
 
 sealed class CourseResult<out T> {
     data class Success<T>(val data: T?, val raw: PostgrestResult? = null) : CourseResult<T>()
@@ -116,15 +119,10 @@ class CourseRepository(private val supabase: SupabaseClient) {
         user_create: Int
     ): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val data = mapOf(
-                "title_course" to title_course,
-                "des_course" to des_course,
-                "public_id_image" to public_id_image,
-                "url_image" to url_image,
-                "is_private" to is_private,
-                "user_create" to user_create
-            )
-            val result = supabase.from("courses").insert(data)
+            val result = supabase.postgrest["courses"]
+                .insert(
+                    courses(null,title_course, des_course, url_image, public_id_image, is_private, user_create, now().toString())
+                )
             return@withContext CourseResult.Success(Unit, result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
@@ -132,29 +130,26 @@ class CourseRepository(private val supabase: SupabaseClient) {
     }
 
     suspend fun updateCourse(
-        id: Int,
+        id: String,
         title_course: String,
         des_course: String,
         public_id_image: String,
-        url_image: String
+        url_image: String,
+        isPrivate: Boolean,
+        user_create: Int
     ): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val data = mapOf(
-                "title_course" to title_course,
-                "des_course" to des_course,
-                "public_id_image" to public_id_image,
-                "url_image" to url_image
-            )
-            val result = supabase.from("courses").update(data) {
-                filter { eq("id", id) }
-            }
+            val result = supabase.postgrest["courses"]
+                .update(
+                    courses(id, title_course, des_course, public_id_image, url_image, is_private = false, user_create, now().toString())
+                )
             return@withContext CourseResult.Success(Unit, result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
         }
     }
 
-    suspend fun deleteCourse(id: Int): CourseResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteCourse(id: String): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.from("courses").delete {
                 filter { eq("id", id) }

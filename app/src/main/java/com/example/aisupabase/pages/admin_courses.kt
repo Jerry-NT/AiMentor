@@ -1,281 +1,5 @@
-//package com.example.aisupabase.pages
-//
-//import android.content.Context
-//import androidx.compose.foundation.Image
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.lazy.LazyColumn
-//import androidx.compose.foundation.lazy.itemsIndexed
-//import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Add
-//import androidx.compose.material.icons.filled.Close
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.*
-//import androidx.compose.runtime.setValue
-//import androidx.compose.ui.*
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.layout.ContentScale
-//import androidx.compose.ui.platform.LocalContext
-//import androidx.compose.ui.res.painterResource
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.unit.dp
-//import androidx.compose.ui.unit.sp
-//import androidx.compose.ui.window.Dialog
-//import androidx.lifecycle.*
-//import androidx.lifecycle.viewmodel.compose.viewModel
-//import androidx.navigation.NavController
-//import coil.compose.AsyncImage
-//import com.example.aisupabase.R
-//import com.example.aisupabase.config.SupabaseClientProvider
-//import com.example.aisupabase.controllers.*
-//import com.example.aisupabase.controllers.authUser
-//import com.example.aisupabase.models.Users
-//import com.example.aisupabase.ui.theme.Blue
-//import com.example.aisupabase.ui.theme.Red
-//import courses
-//import io.github.jan.supabase.SupabaseClient
-//import io.github.jan.supabase.postgrest.postgrest
-//import kotlinx.coroutines.flow.*
-//import kotlinx.coroutines.launch
-//import kotlin.collections.firstOrNull
-//
-//// ViewModel
-//class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
-//    private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
-//    val coursesList: StateFlow<List<courses>> = _coursesList
-//
-//    private val _isLoading = MutableStateFlow(false)
-//    val isLoading: StateFlow<Boolean> = _isLoading
-//
-//    private val _error = MutableStateFlow<String?>(null)
-//    val error: StateFlow<String?> = _error
-//
-//    init {
-//        getCourses()
-//    }
-//
-//    fun getCourses() {
-//        viewModelScope.launch {
-//            _isLoading.value = true
-//            _error.value = null
-//            when (val result = repository.getCourses()) {
-//                is CourseResult.Success -> _coursesList.value = result.data ?: emptyList()
-//                is CourseResult.Error -> _error.value = result.exception.message
-//            }
-//            _isLoading.value = false
-//        }
-//    }
-//
-//    fun deleteCourse(course: courses) {
-//        viewModelScope.launch {
-//            _isLoading.value = true
-//            _error.value = null
-//            when (val result = repository.deleteCourse(course.id ?: 0)) {
-//                is CourseResult.Success -> getCourses()
-//                is CourseResult.Error -> _error.value = result.exception.message
-//            }
-//            _isLoading.value = false
-//        }
-//    }
-//
-//    fun updateCourse(course: courses, title: String, desc: String, total: Int, publicId: String, url: String, isPrivate: Boolean, userId: Int) {
-//        viewModelScope.launch {
-//            _isLoading.value = true
-//            _error.value = null
-//            when (val result = repository.updateCourse(course.id ?: 0, title, desc, total, publicId, url, isPrivate, userId)) {
-//                is CourseResult.Success -> getCourses()
-//                is CourseResult.Error -> _error.value = result.exception.message
-//            }
-//            _isLoading.value = false
-//        }
-//    }
-//
-//    fun addCourse(title: String, desc: String, total: Int, publicId: String, url: String, isPrivate: Boolean, userId: Int) {
-//        viewModelScope.launch {
-//            _isLoading.value = true
-//            _error.value = null
-//            when (val result = repository.addCourse(title, desc, total, publicId, url, isPrivate, userId)) {
-//                is CourseResult.Success -> getCourses()
-//                is CourseResult.Error -> _error.value = result.exception.message
-//            }
-//            _isLoading.value = false
-//        }
-//    }
-//}
-//
-//// ViewModel Factory
-//class CoursesViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
-//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//        if (modelClass.isAssignableFrom(CoursesViewModel::class.java)) {
-//            @Suppress("UNCHECKED_CAST")
-//            return CoursesViewModel(CourseRepository(supabase)) as T
-//        }
-//        throw IllegalArgumentException("Unknown ViewModel class")
-//    }
-//}
-//
-//// Trang chính
-//@Composable
-//fun Admin_Courses(navController: NavController) {
-//    val context = LocalContext.current
-//    LaunchedEffect(Unit) {
-//        val session = authUser().getUserSession(context)
-//        val role = session["role"] as? String
-//        val username = session["username"] as? String
-//        if (username == null || role != "admin") {
-//            authUser().clearUserSession(context)
-//            navController.navigate("login")
-//        }
-//    }
-//
-//    val supabase = SupabaseClientProvider.client
-//    CourseManagementApp(supabase = supabase)
-//}
-//
-//// Giao diện chính
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun CourseManagementApp(
-//    supabase: SupabaseClient,
-//    viewModel: CoursesViewModel = viewModel(factory = CoursesViewModelFactory(supabase))
-//) {
-//    val isLoading by viewModel.isLoading.collectAsState()
-//    val error by viewModel.error.collectAsState()
-//    val coursesList by viewModel.coursesList.collectAsState()
-//
-//    var showAddDialog by remember { mutableStateOf(false) }
-//    var showUpdateDialog by remember { mutableStateOf(false) }
-//    var showDeleteDialog by remember { mutableStateOf(false) }
-//    var selected by remember { mutableStateOf<courses?>(null) }
-//
-//    Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = { Text("Quản lý Khóa học") },
-//                actions = {
-//                    Button(
-//                        onClick = { showAddDialog = true },
-//                        modifier = Modifier.padding(end = 16.dp),
-//                        colors = ButtonDefaults.buttonColors(containerColor = Blue)
-//                    ) {
-//                        Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
-//                        Spacer(modifier = Modifier.width(4.dp))
-//                        Text("Thêm", color = Color.White)
-//                    }
-//                }
-//            )
-//        }
-//    ) { paddingValues ->
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(paddingValues)
-//        ) {
-//            Image(
-//                painter = painterResource(id = R.drawable.background),
-//                contentDescription = null,
-//                modifier = Modifier.fillMaxSize(),
-//                contentScale = ContentScale.Crop,
-//                alpha = 0.5f
-//            )
-//
-//            when {
-//                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-//                error != null -> {
-//                    Column(
-//                        modifier = Modifier
-//                            .fillMaxSize()
-//                            .padding(16.dp),
-//                        horizontalAlignment = Alignment.CenterHorizontally,
-//                        verticalArrangement = Arrangement.Center
-//                    ) {
-//                        Text(
-//                            text = error ?: "Lỗi không xác định",
-//                            color = Color.Red,
-//                            modifier = Modifier.padding(bottom = 16.dp)
-//                        )
-//                        Button(onClick = { viewModel.getCourses() }) {
-//                            Text("Thử lại")
-//                        }
-//                    }
-//                }
-//
-//                else -> {
-//                    LazyColumn(
-//                        modifier = Modifier
-//                            .fillMaxSize()
-//                            .padding(16.dp),
-//                        verticalArrangement = Arrangement.spacedBy(12.dp)
-//                    ) {
-//                        // fillter course public -> tu viet
-//                        itemsIndexed(coursesList) { index, course ->
-//                            Card(
-//                                modifier = Modifier.fillMaxWidth(),
-//                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-//                                colors = CardDefaults.cardColors(containerColor = Color.White)
-//                            ) {
-//                                Column(
-//                                    modifier = Modifier.padding(16.dp)
-//                                ) {
-//                                    Text("Số thứ tự: ${index + 1}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-//                                    Text("Tiêu đề: ${course.title_course}", fontSize = 14.sp)
-//                                    Text("Mô tả: ${course.des_course}", fontSize = 14.sp)
-//                                    UsersText(supabase, course.user_create)
-//                                    // hien thi lo trinh id_roadmaps
-//                                    AsyncImage(
-//                                        model = course.url_image,
-//                                        contentDescription = "Ảnh khóa học",
-//                                        modifier = Modifier
-//                                            .fillMaxWidth()
-//                                            .height(180.dp),
-//                                        contentScale = ContentScale.Crop
-//                                    )
-//
-//                                    course.created_at?.let {
-//                                        Text("Ngày tạo: $it", fontSize = 12.sp, color = Color.Gray)
-//                                    }
-//
-//                                    Row(
-//                                        modifier = Modifier.fillMaxWidth(),
-//                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-//                                    ) {
-//                                        Button(
-//                                            onClick = {
-//                                                selected = course
-//                                                showUpdateDialog = true
-//                                            },
-//                                            colors = ButtonDefaults.buttonColors(containerColor = Blue),
-//                                            modifier = Modifier.weight(1f)
-//                                        ) {
-//                                            Text("Sửa", color = Color.White)
-//                                        }
-//
-//                                        Button(
-//                                            onClick = {
-//                                                selected = course
-//                                                showDeleteDialog = true
-//                                            },
-//                                            colors = ButtonDefaults.buttonColors(containerColor = Red),
-//                                            modifier = Modifier.weight(1f)
-//                                        ) {
-//                                            Text("Xóa", color = Color.White)
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//
-//    }
-//}
-
 package com.example.aisupabase.pages
 
-import android.R.attr.id
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -307,29 +31,38 @@ import kotlinx.coroutines.launch
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.aisupabase.R
+import com.example.aisupabase.controllers.RoadMapRepository
+import com.example.aisupabase.controllers.RoadMapResult
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import courses
+import course_roadmaps
 
 // ViewModel quản lý state courses
-class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
+class CoursesViewModel(private val repository: CourseRepository, private val roadmap_repository: RoadMapRepository) : ViewModel() {
     private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
     val coursesList: StateFlow<List<courses>> = _coursesList
+    //them roadmap
+    private val _roadmapList = MutableStateFlow<List<course_roadmaps>>(emptyList())
+    val roadmapList: StateFlow<List<course_roadmaps>> = _roadmapList
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -338,9 +71,20 @@ class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
     val error: StateFlow<String?> = _error
 
     init {
-        getCourses()
+       // getCourses()
+        getroadmap()
     }
-
+    fun getroadmap() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = roadmap_repository.getRoadMaps()) {
+                is RoadMapResult.Success -> _roadmapList.value = result.data ?: emptyList()
+                is RoadMapResult.Error -> _error.value = result.exception.message
+            }
+            _isLoading.value = false
+        }
+    }
     fun getCourses() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -353,11 +97,11 @@ class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
         }
     }
 
-    fun deleteCourse(courseId: Int) {
+    fun deleteCourse(course: courses) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.deleteCourse(courseId)) {
+            when (val result = repository.deleteCourse(course.id.toString())) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
@@ -365,11 +109,11 @@ class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
         }
     }
 
-    fun updateCourse(course: courses, title: String, description: String, publicId: String, urlImage: String) {
+    fun updateCourse(id: String, title: String, description: String, publicId: String, urlImage: String, isPrivate: Boolean, userCreate: Any) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.updateCourse(id, title, description, publicId, urlImage)) {
+            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, isPrivate, userCreate as Int)) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
@@ -378,25 +122,13 @@ class CoursesViewModel(private val repository: CourseRepository) : ViewModel() {
     }
 
     fun addCourse(
-        title: String,
-        description: String,
-        publicId: String,
-        urlImage: String,
-        isPrivate: Boolean,
-        userCreate: Int
+        title: String, description: String, publicId: String, urlImage: String, isPrivate: Boolean, userCreate: Int
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             when (
-                val result = repository.addCourse(
-                    title,
-                    description,
-                    publicId,
-                    urlImage,
-                    isPrivate,
-                    userCreate
-                )
+                val result = repository.addCourse(title, description, publicId, urlImage, isPrivate ,userCreate)
             ) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
@@ -411,7 +143,8 @@ class CoursesViewModelFactory(private val supabase: SupabaseClient) : ViewModelP
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CoursesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CoursesViewModel(CourseRepository(supabase)) as T
+            return CoursesViewModel(CourseRepository(supabase),
+                RoadMapRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -431,8 +164,8 @@ fun Admin_Courses(navController: NavController) {
         }
     }
 
-    //val session = authUser().getUserSession(context)
-    // val id = session["id"] as? Int ?: 0
+    val session = authUser().getUserSession(context)
+    val id = session["id"] as? Int ?: 0
     val supabase = SupabaseClientProvider.client
     CourseManagementApp(supabase = supabase)
 }
@@ -587,4 +320,340 @@ fun CourseManagementApp(
             }
         }
     }
+
+    //add dialog
+    if (showAddDialog) {
+        val roadmaplist by viewModel.roadmapList.collectAsState()
+        var expanded by remember { mutableStateOf(false) }
+        var selectedRoadmap: course_roadmaps? by remember { mutableStateOf(null) }
+
+
+        Dialog(onDismissRequest = { showAddDialog = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                var title_course by remember { mutableStateOf("") }
+                var errorMsg by remember { mutableStateOf<String?>(null) }
+
+                var description by remember { mutableStateOf("") }
+                var errorcontentMsg by remember { mutableStateOf<String?>(null) }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Thêm khóa học", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showAddDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Tiêu đề",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = title_course,
+                        onValueChange = {
+                            title_course = it
+                            errorMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Nhập tiêu đề") },
+                        singleLine = true,
+                        isError = errorMsg != null
+                    )
+                    if (errorMsg != null) {
+                        Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Nội dung",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = {
+                            description = it
+                            errorcontentMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Nhập nội dung") },
+                        singleLine = true,
+                        isError = errorcontentMsg != null
+                    )
+                    if (errorcontentMsg != null) {
+                        Text(errorcontentMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Chọn lộ trình: ", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Box {
+                        OutlinedTextField(
+                            value = selectedRoadmap?.title ?: "",
+                            onValueChange = {},
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true },
+                            enabled = false,
+                            placeholder = { Text("Chọn lộ trình:") }
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            roadmaplist.forEach { roadmap ->
+                                DropdownMenuItem(
+                                    text = { Text(roadmap.title) },
+                                    onClick = {
+                                        selectedRoadmap = roadmap
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                if (!isValidTitle(title_course)) {
+                                    errorMsg =
+                                        "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                }
+                                if(title_course.length <150) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (ít nhất 150 ký tự)"
+                                }
+                                if (!isValidTitle(description)) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                }
+                                else {
+                                    val courseId = selectedRoadmap?.id ?: 0
+                                    viewModel.addCourse(title_course, description, "1", "1", false, courseId)
+                                    showAddDialog = false
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) { Text("Thêm", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { showAddDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Hủy") }
+                    }
+                }
+            }
+        }
+    }
+
+    //Delete dialog
+    if (showDeleteDialog && selected != null) {
+        Dialog(onDismissRequest = { showDeleteDialog = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        "Xác nhận xóa",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        "Bạn có thực sự muốn xóa ?",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                selected?.let { viewModel.deleteCourse(it) }
+                                showDeleteDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Red)
+                        ) { Text("Xóa", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { showDeleteDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Hủy") }
+                    }
+                }
+            }
+        }
+    }
+
+    //update dialog
+    if (showAddDialog) {
+        val roadmaplist by viewModel.roadmapList.collectAsState()
+        var expanded by remember { mutableStateOf(false) }
+        var selectedRoadmap: course_roadmaps? by remember { mutableStateOf(null) }
+
+
+        Dialog(onDismissRequest = { showAddDialog = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                var title_course by remember { mutableStateOf(selected!!.title_course) }
+                var errorMsg by remember { mutableStateOf<String?>(null) }
+
+                var description by remember { mutableStateOf(selected!!.des_course) }
+                var errorcontentMsg by remember { mutableStateOf<String?>(null) }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Thêm khóa học", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showAddDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Tiêu đề",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = title_course,
+                        onValueChange = {
+                            title_course = it
+                            errorMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Nhập tiêu đề") },
+                        singleLine = true,
+                        isError = errorMsg != null
+                    )
+                    if (errorMsg != null) {
+                        Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Nội dung",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = {
+                            description = it
+                            errorcontentMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Nhập nội dung") },
+                        singleLine = true,
+                        isError = errorcontentMsg != null
+                    )
+                    if (errorcontentMsg != null) {
+                        Text(errorcontentMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Chọn lộ trình: ", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Box {
+                        OutlinedTextField(
+                            value = selectedRoadmap?.title ?: "",
+                            onValueChange = {},
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true },
+                            enabled = false,
+                            placeholder = { Text("Chọn lộ trình:") }
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            roadmaplist.forEach { roadmap ->
+                                DropdownMenuItem(
+                                    text = { Text(roadmap.title) },
+                                    onClick = {
+                                        selectedRoadmap = roadmap
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                if (!isValidTitle(title_course)) {
+                                    errorMsg =
+                                        "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                }
+                                if(title_course.length <150) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (ít nhất 150 ký tự)"
+                                }
+                                if (!isValidTitle(description)) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                }
+                                else {
+                                    val courseId = selectedRoadmap?.id ?: 0
+                                    viewModel.updateCourse(selected!!.id.toString(),title_course, description, "1", "1", false, courseId)
+                                    showAddDialog = false
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) { Text("Thêm", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { showAddDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Hủy") }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun isValidTitle(title: String): Boolean {
+    val trimmed = title.trim() // Loại bỏ khoảng trắng đầu và cuối
+    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$") // Chỉ cho phép chữ cái, số, khoảng trắng và ký tự tiếng Việt
+    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
 }

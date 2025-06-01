@@ -2,7 +2,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class courses(
-    val id: Int? = null,
+    val id: String? = null,
     val title_course: String,
     val des_course: String,
     val public_id_image: String,

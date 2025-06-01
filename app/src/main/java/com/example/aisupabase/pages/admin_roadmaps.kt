@@ -96,7 +96,7 @@ class RoadMapViewModel (private val repository: RoadMapRepository): ViewModel(){
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.deleteRoadMap(roadmap.id.toString())) {
+            when (val result = repository.deleteRoadMap(roadmap.id ?:0)) {
                 is RoadMapResult.Success -> getRoadMaps()
                 is RoadMapResult.Error -> _error.value = "Failed to delete roadmap: ${result.exception.message}"
             }
@@ -104,7 +104,7 @@ class RoadMapViewModel (private val repository: RoadMapRepository): ViewModel(){
         }
     }
 
-    fun updateRoadMap(id: String, title: String) {
+    fun updateRoadMap(id: Int, title: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -429,12 +429,20 @@ fun RoadMapManagementApp(
                     ) {
                         Button(
                             onClick = {
+                                var check = true
                                 if (!isValidTitle(roadmapTitle)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                } else {
+                                    check = false
+                                }
+                                if(roadmapTitle.length < 150)
+                                {
+                                    errorMsg = "Tiêu đề không được quá 150 ký tự"
+                                    check = false
+                                }
+                                if (check) {
                                     viewModel.updateRoadMap(
-                                        selectedRoadMap!!.id.toString(),
+                                        selectedRoadMap!!.id ?: 0,
                                         roadmapTitle.trim()
                                     )
                                     showUpdateDialog = false

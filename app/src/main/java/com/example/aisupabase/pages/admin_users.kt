@@ -61,6 +61,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+//viewmodel
 class UserViewModel(private val repository: UserRepository) : ViewModel() {
     private val _users = MutableStateFlow<List<Users>>(emptyList())
     val userlist: StateFlow<List<Users>> = _users

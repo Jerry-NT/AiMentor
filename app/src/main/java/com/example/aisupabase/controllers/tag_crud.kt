@@ -28,7 +28,7 @@ class TagRepository(private val supabase: SupabaseClient) {
     }
 
     // Xóa theo id
-    suspend fun deleteTag(id: String): TagResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteTag(id: Int): TagResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["tags"]
                 .delete {
@@ -44,7 +44,7 @@ class TagRepository(private val supabase: SupabaseClient) {
     }
 
     // Cập nhật theo id
-    suspend fun updateTag(id: String, title: String): TagResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun updateTag(id: Int, title: String): TagResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["tags"]
                 .update({

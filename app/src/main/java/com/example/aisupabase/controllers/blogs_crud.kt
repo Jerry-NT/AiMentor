@@ -45,21 +45,16 @@ class BlogRepository(private val supabase: SupabaseClient) {
     }
 
     suspend fun updateBlog(
-        id: String,
+        id: Int,
         title_blog: String,
         public_id_image: String,
         url_image: String,
         id_tag: Int,
-        content_blog: String
+        content_blog: String,
+        created_at: String
     ): BlogResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val data = mapOf(
-                "title_blog" to title_blog,
-                "public_id_image" to public_id_image,
-                "url_image" to url_image,
-                "id_tag" to id_tag,
-                "content_blog" to content_blog
-            )
+            val data = blogs(id,title_blog, public_id_image, url_image, id_tag, content_blog,created_at)
             val result = supabase.from("blogs").update(data) {
                 filter { eq("id", id) }
             }
@@ -69,7 +64,7 @@ class BlogRepository(private val supabase: SupabaseClient) {
         }
     }
 
-    suspend fun deleteBlog(id: String): BlogResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteBlog(id: Int): BlogResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.from("blogs").delete {
                 filter { eq("id", id) }

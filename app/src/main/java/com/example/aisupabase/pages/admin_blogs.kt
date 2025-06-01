@@ -103,7 +103,7 @@ class BlogsViewModel(private val repository: BlogRepository, private val tag_rep
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.deleteBlog(blog.id.toString())) {
+            when (val result = repository.deleteBlog(blog.id ?: 0)) {
                 is BlogResult.Success -> getBlogs()
                 is BlogResult.Error -> _error.value = result.exception.message
             }
@@ -111,11 +111,11 @@ class BlogsViewModel(private val repository: BlogRepository, private val tag_rep
         }
     }
 
-    fun updateBlog(blog: blogs, title: String, publicId: String, url: String, tagId: Int, content: String) {
+    fun updateBlog(id:Int, title: String, publicId: String, url: String, tagId: Int, content: String,created_at: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.updateBlog(blog.id.toString(), title, publicId, url, tagId, content)) {
+            when (val result = repository.updateBlog(id, title, publicId, url, tagId, content,created_at)) {
                 is BlogResult.Success -> getBlogs()
                 is BlogResult.Error -> _error.value = result.exception.message
             }
@@ -178,7 +178,6 @@ fun BlogManagementApp(
     val error by viewModel.error.collectAsState()
 
     val blogsList by viewModel.blogsList.collectAsState()
-
 
     var showAddDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -446,19 +445,27 @@ fun BlogManagementApp(
                     ) {
                         Button(
                             onClick = {
+                                var check = true
                                 if (!isValidTitle(title_blog)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                if(title_blog.length <150) {
+
+                                if(title_blog.length < 150) {
                                     errorcontentMsg =
-                                        "Nội dung không hợp lệ (ít nhất 150 ký tự)"
+                                        "Nội dung không hợp lệ (tối đa 150 ký tự)"
+                                    check = false
+
                                 }
+
                                 if (!isValidTitle(content)) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                else {
+
+                                if(check) {
                                     val tagId = selectedTag?.id ?: 0
                                     viewModel.addBlog(title_blog, "1", "1", tagId, content)
                                     showAddDialog = false
@@ -469,6 +476,210 @@ fun BlogManagementApp(
                         ) { Text("Thêm", color = Color.White) }
                         OutlinedButton(
                             onClick = { showAddDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Hủy") }
+                    }
+                }
+            }
+        }
+    }
+
+    // Delete Dialog
+    if (showDeleteDialog && selected != null) {
+        Dialog(onDismissRequest = { showDeleteDialog = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        "Xác nhận xóa",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        "Bạn có thực sự muốn xóa ?",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                selected?.let { viewModel.deleteBlog(it) }
+                                showDeleteDialog = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Red)
+                        ) { Text("Xóa", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { showDeleteDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Hủy") }
+                    }
+                }
+            }
+        }
+    }
+
+    // Update Dialog
+    if (showUpdateDialog && selected != null) {
+        val tagsList by viewModel.tagList.collectAsState()
+        var expanded by remember { mutableStateOf(false) }
+        var selectedTag by remember {
+            mutableStateOf(
+                tagsList.find { it.id == selected?.id_tag }
+            )
+        }
+
+        LaunchedEffect(tagsList, selected) {
+            selectedTag = tagsList.find { it.id == selected?.id_tag }
+        }
+
+        Dialog(onDismissRequest = { showAddDialog = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                var title_blog by remember { mutableStateOf(selected!!.title_blog) }
+                var errorMsg by remember { mutableStateOf<String?>(null) }
+
+                var content by remember { mutableStateOf(selected!!.content_blog) }
+                var errorcontentMsg by remember { mutableStateOf<String?>(null) }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Cập nhập blog", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showAddDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Tiêu đề",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = title_blog,
+                        onValueChange = {
+                            title_blog = it
+                            errorMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Nhập tiêu đề") },
+                        singleLine = true,
+                        isError = errorMsg != null
+                    )
+                    if (errorMsg != null) {
+                        Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Nội dung",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = content,
+                        onValueChange = {
+                            content = it
+                            errorcontentMsg = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Nhập nội dung") },
+                        singleLine = true,
+                        isError = errorcontentMsg != null
+                    )
+                    if (errorcontentMsg != null) {
+                        Text(errorcontentMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Chọn tag", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Box {
+                        OutlinedTextField(
+                            value = selectedTag?.title_tag ?: "",
+                            onValueChange = {},
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { expanded = true },
+                            enabled = false,
+                            placeholder = { Text("Chọn tag") }
+                        )
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            tagsList.forEach { tag ->
+                                DropdownMenuItem(
+                                    text = { Text(tag.title_tag) },
+                                    onClick = {
+                                        selectedTag = tag
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                var check = true
+                                if (!isValidTitle(title_blog)) {
+                                    errorMsg =
+                                        "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
+                                }
+
+                                if(title_blog.length < 150) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (tối đa 150 ký tự)"
+                                    check = false
+
+                                }
+
+                                if (!isValidTitle(content)) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
+                                }
+
+                                if(check) {
+                                    val tagId = selectedTag?.id ?: 0
+                                    viewModel.updateBlog(selected?.id ?:0 ,title_blog, "1", "1", tagId, content,selected!!.created_at.toString())
+                                    showUpdateDialog = false
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) { Text("Cập nhập", color = Color.White) }
+                        OutlinedButton(
+                            onClick = { showUpdateDialog = false },
                             modifier = Modifier.weight(1f)
                         ) { Text("Hủy") }
                     }

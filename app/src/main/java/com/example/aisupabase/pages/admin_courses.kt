@@ -1,5 +1,6 @@
 package com.example.aisupabase.pages
 
+import android.util.Log
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -71,7 +73,7 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
     val error: StateFlow<String?> = _error
 
     init {
-       // getCourses()
+        getCourses()
         getroadmap()
     }
     fun getroadmap() {
@@ -101,7 +103,7 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.deleteCourse(course.id.toString())) {
+            when (val result = repository.deleteCourse(course.id ?: 0)) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
@@ -109,11 +111,11 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
         }
     }
 
-    fun updateCourse(id: String, title: String, description: String, publicId: String, urlImage: String, isPrivate: Boolean, userCreate: Any) {
+    fun updateCourse(id: Int, title: String, description: String, publicId: String, urlImage: String, userCreate: Int,id_roadmap:Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, isPrivate, userCreate as Int)) {
+            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, userCreate,id_roadmap)) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
@@ -122,13 +124,13 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
     }
 
     fun addCourse(
-        title: String, description: String, publicId: String, urlImage: String, isPrivate: Boolean, userCreate: Int
+        title: String, description: String, publicId: String, urlImage: String, isPrivate: Boolean, userCreate: Int,id_roadmap: Int
     ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             when (
-                val result = repository.addCourse(title, description, publicId, urlImage, isPrivate ,userCreate)
+                val result = repository.addCourse(title, description, publicId, urlImage, isPrivate ,userCreate,id_roadmap)
             ) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
@@ -164,8 +166,7 @@ fun Admin_Courses(navController: NavController) {
         }
     }
 
-    val session = authUser().getUserSession(context)
-    val id = session["id"] as? Int ?: 0
+
     val supabase = SupabaseClientProvider.client
     CourseManagementApp(supabase = supabase)
 }
@@ -326,7 +327,9 @@ fun CourseManagementApp(
         val roadmaplist by viewModel.roadmapList.collectAsState()
         var expanded by remember { mutableStateOf(false) }
         var selectedRoadmap: course_roadmaps? by remember { mutableStateOf(null) }
-
+        val context = LocalContext.current
+        val session = authUser().getUserSession(context)
+        val id = session["id"] as? Int ?: 0
 
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
@@ -431,21 +434,32 @@ fun CourseManagementApp(
                     ) {
                         Button(
                             onClick = {
+                                var check = true
                                 if (!isValidTitle(title_course)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                if(title_course.length <150) {
+                                if(title_course.length < 150) {
                                     errorcontentMsg =
-                                        "Nội dung không hợp lệ (ít nhất 150 ký tự)"
+                                        "Nội dung không hợp lệ (tối đa 150 ký tự)"
+                                    check = false
+
                                 }
                                 if (!isValidTitle(description)) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                else {
-                                    val courseId = selectedRoadmap?.id ?: 0
-                                    viewModel.addCourse(title_course, description, "1", "1", false, courseId)
+                                if(description.length < 500) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (tối đa 500 ký tự)"
+                                    check = false
+                                }
+
+                                if (check){
+                                    val roadmapID = selectedRoadmap?.id ?: 0
+                                    viewModel.addCourse(title_course, description, "1", "1",false, id, roadmapID)
                                     showAddDialog = false
                                 }
                             },
@@ -511,12 +525,23 @@ fun CourseManagementApp(
     }
 
     //update dialog
-    if (showAddDialog) {
+    if (showUpdateDialog && selected != null) {
         val roadmaplist by viewModel.roadmapList.collectAsState()
         var expanded by remember { mutableStateOf(false) }
-        var selectedRoadmap: course_roadmaps? by remember { mutableStateOf(null) }
+        var selectedRoadmap by remember {
+            mutableStateOf(
+                roadmaplist.find { it.id == selected?.id_roadmap }
+            )
+        }
+
+        LaunchedEffect(roadmaplist, selected) {
+            selectedRoadmap = roadmaplist.find { it.id == selected?.id_roadmap }
+        }
 
 
+        val context = LocalContext.current
+        val session = authUser().getUserSession(context)
+        val id = session["id"] as? Int ?: 0
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
                 modifier = Modifier
@@ -613,6 +638,7 @@ fun CourseManagementApp(
                             }
                         }
                     }
+                    // thiếu kiểm tra lộ trình ?
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -620,29 +646,43 @@ fun CourseManagementApp(
                     ) {
                         Button(
                             onClick = {
+                                var check = true
                                 if (!isValidTitle(title_course)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                if(title_course.length <150) {
+
+                                if(title_course.length < 150) {
                                     errorcontentMsg =
-                                        "Nội dung không hợp lệ (ít nhất 150 ký tự)"
+                                        "Nội dung không hợp lệ (tối đa 150 ký tự)"
+                                    check = false
+
                                 }
+
                                 if (!isValidTitle(description)) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                else {
-                                    val courseId = selectedRoadmap?.id ?: 0
-                                    viewModel.updateCourse(selected!!.id.toString(),title_course, description, "1", "1", false, courseId)
-                                    showAddDialog = false
+
+                                if(description.length < 500) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (tối đa 500 ký tự)"
+                                    check = false
+                                }
+
+                                if (check){
+                                    val roadmapID = selectedRoadmap?.id ?: 0
+                                    viewModel.updateCourse(selected?.id ?: 0,title_course, description, "1", "1", id,roadmapID)
+                                    showUpdateDialog = false
                                 }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)
-                        ) { Text("Thêm", color = Color.White) }
+                        ) { Text("Cập nhập", color = Color.White) }
                         OutlinedButton(
-                            onClick = { showAddDialog = false },
+                            onClick = { showUpdateDialog = false },
                             modifier = Modifier.weight(1f)
                         ) { Text("Hủy") }
                     }

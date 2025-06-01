@@ -69,7 +69,7 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.deleteTag(tag.id.toString())) {
+            when (val result = repository.deleteTag(tag.id)) {
                 is TagResult.Success -> getTags()
                 is TagResult.Error -> _error.value = "Failed to delete tag: ${result.exception.message}"
             }
@@ -77,7 +77,7 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
         }
     }
 
-    fun updateTag(id: String, title: String) {
+    fun updateTag(id: Int, title: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -141,8 +141,7 @@ private fun isValidTagTitle(title: String): Boolean {
 @Composable
 fun TagManagementApp(
     supabase: SupabaseClient,
-    viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))
-) {
+    viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))) {
     val tags by viewModel.tagList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -325,10 +324,19 @@ fun TagManagementApp(
                             ) {
                                 Button(
                                     onClick = {
+                                        var check = true
                                         if (!isValidTagTitle(tagTitle)) {
                                             errorMsg =
                                                 "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                        } else {
+                                            check = false
+                                        }
+                                        if (tagTitle.length < 150) {
+                                            errorMsg =
+                                                "Tiêu đề tối đa 150 ký tự)"
+                                            check = false
+
+                                        }
+                                        if(check) {
                                             viewModel.addTag(tagTitle.trim())
                                             showAddDialog = false
                                         }
@@ -399,12 +407,21 @@ fun TagManagementApp(
                             ) {
                                 Button(
                                     onClick = {
+                                        var check = true
                                         if (!isValidTagTitle(tagTitle)) {
                                             errorMsg =
                                                 "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                        } else {
+                                            check = false
+                                        }
+                                        if (tagTitle.length < 150) {
+                                            errorMsg =
+                                                "Tiêu đề tối đa 150 ký tự)"
+                                            check = false
+
+                                        }
+                                        if(check) {
                                             viewModel.updateTag(
-                                                selectedTag!!.id.toString(),
+                                                selectedTag!!.id,
                                                 tagTitle.trim()
                                             )
                                             showUpdateDialog = false

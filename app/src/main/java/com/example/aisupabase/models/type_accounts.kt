@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class type_accounts(
-    val id: Int,
+    val id: Int? = null,
     val type : String,
     val des: String,
     val max_course: Int,

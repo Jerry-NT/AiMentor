@@ -28,7 +28,7 @@ class TypeAccountRepository(private val supabase: SupabaseClient) {
     }
 
     // Xóa theo id
-    suspend fun deleteTypeAccount(id: String): TypeAccountResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteTypeAccount(id: Int): TypeAccountResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["type_accounts"]
                 .delete {
@@ -44,16 +44,11 @@ class TypeAccountRepository(private val supabase: SupabaseClient) {
     }
 
     // Cập nhật theo id
-    suspend fun updateTypeAccount(id: String, type: String,des:String,max_course: Int, price: Double): TypeAccountResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun updateTypeAccount(id: Int, type: String,des:String,max_course: Int, price: Double): TypeAccountResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["type_accounts"]
                 .update(
-                    mapOf(
-                        "type" to type,
-                        "description" to des,
-                        "max_course" to max_course,
-                        "price" to price
-                    )
+                    type_accounts(id, type, des, max_course, price)
                 )  {
                     filter {
                         eq("id", id)
@@ -70,12 +65,7 @@ class TypeAccountRepository(private val supabase: SupabaseClient) {
     suspend fun addTypeAccount(type: String,des:String,max_course: Int, price: Double): TypeAccountResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["type_accounts"]
-                .insert(mapOf(
-                    "type" to type,
-                    "des" to des,
-                    "max_course" to max_course,
-                    "price" to price
-
+                .insert(type_accounts(null, type, des, max_course, price
                 ))
             return@withContext TypeAccountResult.Success(Unit, result)
         } catch (e: Exception) {

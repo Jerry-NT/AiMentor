@@ -1,85 +1,3 @@
-//package com.example.aisupabase.controllers
-//
-//import courses
-//import io.github.jan.supabase.SupabaseClient
-//import io.github.jan.supabase.postgrest.from
-//
-//sealed class CourseResult {
-//    data class Success(val data: List<courses>?) : CourseResult()
-//    data class Error(val exception: Throwable) : CourseResult()
-//}
-//
-//class CourseRepository(private val supabase: SupabaseClient) {
-//
-//    suspend fun getCourses(): CourseResult {
-//        return try {
-//            val result = supabase.from("courses").select().decodeList<courses>()
-//            CourseResult.Success(result)
-//        } catch (e: Exception) {
-//            CourseResult.Error(e)
-//        }
-//    }
-//
-//    suspend fun addCourse(
-//        title_course: String,
-//        des_course: String,
-//        public_id_image: String,
-//        url_image: String,
-//        is_private: Boolean,
-//        user_create: Int
-//    ): CourseResult {
-//        return try {
-//            val data = mapOf(
-//                "title_course" to title_course,
-//                "des_course" to des_course,
-//                "public_id_image" to public_id_image,
-//                "url_image" to url_image,
-//                "is_private" to is_private,
-//                "user_create" to user_create
-//            )
-//            supabase.from("courses").insert(data)
-//            getCourses()
-//        } catch (e: Exception) {
-//            CourseResult.Error(e)
-//        }
-//    }
-//
-//    suspend fun updateCourse(
-//        id: Int,
-//        title_course: String,
-//        des_course: String,
-//        public_id_image: String,
-//        url_image: String,
-//    ): CourseResult {
-//        return try {
-//            val data = mapOf(
-//                "title_course" to title_course,
-//                "des_course" to des_course,
-//                "public_id_image" to public_id_image,
-//                "url_image" to url_image
-//            )
-//            supabase.from("courses").update(data) {
-//                filter { eq("id", id) }
-//            }
-//            getCourses()
-//        } catch (e: Exception) {
-//            CourseResult.Error(e)
-//        }
-//    }
-//
-//    suspend fun deleteCourse(id: Int): CourseResult {
-//        return try {
-//            supabase.from("courses").delete {
-//                filter { eq("id", id) }
-//            }
-//            getCourses()
-//        } catch (e: Exception) {
-//            CourseResult.Error(e)
-//        }
-//    }
-//}
-
-
 package com.example.aisupabase.controllers
 
 import android.R.id
@@ -102,6 +20,7 @@ class CourseRepository(private val supabase: SupabaseClient) {
 
     suspend fun getCourses(): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
         try {
+
             val result = supabase.from("courses").select()
             val coursesList = result.decodeList<courses>()
             return@withContext CourseResult.Success(coursesList, result)
@@ -116,12 +35,13 @@ class CourseRepository(private val supabase: SupabaseClient) {
         public_id_image: String,
         url_image: String,
         is_private: Boolean,
-        user_create: Int
+        user_create: Int,
+        id_roadmap: Int
     ): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["courses"]
                 .insert(
-                    courses(null,title_course, des_course, url_image, public_id_image, is_private, user_create, now().toString())
+                    courses(null,title_course, des_course, url_image, public_id_image, is_private,id_roadmap, user_create, now().toString())
                 )
             return@withContext CourseResult.Success(Unit, result)
         } catch (e: Exception) {
@@ -130,26 +50,29 @@ class CourseRepository(private val supabase: SupabaseClient) {
     }
 
     suspend fun updateCourse(
-        id: String,
+        id: Int,
         title_course: String,
         des_course: String,
         public_id_image: String,
         url_image: String,
-        isPrivate: Boolean,
-        user_create: Int
+        user_create: Int,
+        id_roadmap: Int
+
     ): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["courses"]
                 .update(
-                    courses(id, title_course, des_course, public_id_image, url_image, is_private = false, user_create, now().toString())
-                )
+                    courses(id, title_course, des_course, public_id_image, url_image, is_private = false, id_roadmap, user_create, now().toString())
+                ){
+                    filter { eq("id", id) }
+                }
             return@withContext CourseResult.Success(Unit, result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
         }
     }
 
-    suspend fun deleteCourse(id: String): CourseResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteCourse(id: Int): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.from("courses").delete {
                 filter { eq("id", id) }
@@ -158,12 +81,6 @@ class CourseRepository(private val supabase: SupabaseClient) {
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
         }
-    }
-
-    suspend fun getAllCourses(supabase: SupabaseClient): List<courses> {
-        return supabase.postgrest["courses"]
-            .select()
-            .decodeList<courses>()
     }
 
 }

@@ -28,7 +28,7 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
     }
 
     // Xóa theo id
-    suspend fun deleteRoadMap(id: String): RoadMapResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteRoadMap(id: Int): RoadMapResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["course_roadmaps"]
                 .delete {
@@ -44,7 +44,7 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
     }
 
     // Cập nhật theo id
-    suspend fun updateRoadMap(id: String, title: String): RoadMapResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun updateRoadMap(id: Int, title: String): RoadMapResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["course_roadmaps"]
                 .update({

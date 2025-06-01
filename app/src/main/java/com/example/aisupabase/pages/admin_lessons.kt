@@ -1,3 +1,622 @@
+//package com.example.aisupabase.pages
+//
+//import androidx.compose.foundation.Image
+//import androidx.compose.foundation.layout.*
+//import androidx.compose.foundation.lazy.LazyColumn
+//import androidx.compose.foundation.lazy.itemsIndexed
+//import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.filled.Add
+//import androidx.compose.material3.*
+//import androidx.compose.runtime.*
+//import androidx.compose.ui.*
+//import androidx.compose.ui.graphics.Color
+//import androidx.compose.ui.layout.ContentScale
+//import androidx.compose.ui.platform.LocalContext
+//import androidx.compose.ui.res.painterResource
+//import androidx.compose.ui.text.font.FontWeight
+//import androidx.compose.ui.unit.dp
+//import androidx.compose.ui.unit.sp
+//import androidx.lifecycle.*
+//import androidx.lifecycle.viewmodel.compose.viewModel
+//import androidx.navigation.NavController
+//import com.example.aisupabase.R
+//import com.example.aisupabase.config.SupabaseClientProvider
+//import com.example.aisupabase.config.SupabaseClientProvider.client
+//import com.example.aisupabase.controllers.*
+//import com.example.aisupabase.ui.theme.Blue
+//import com.example.aisupabase.ui.theme.Red
+//import courses
+//import io.github.jan.supabase.SupabaseClient
+//import io.github.jan.supabase.postgrest.from
+//import io.github.jan.supabase.supabaseJson
+//import kotlinx.coroutines.flow.*
+//import kotlinx.coroutines.launch
+//import lessons
+//
+//@Composable
+//fun Admin_Lessons(navController: NavController) {
+//    val context = LocalContext.current
+//    LaunchedEffect(Unit) {
+//        val session = authUser().getUserSession(context)
+//        val role = session["role"] as? String
+//        val username = session["username"] as? String
+//        if (username == null || role != "admin") {
+//            authUser().clearUserSession(context)
+//            navController.navigate("login")
+//        }
+//    }
+//
+//    val supabase = SupabaseClientProvider.client
+//    LessonManagementApp(supabase = supabase)
+//}
+//
+//class LessonsViewModel(private val repository: LessonRepository) : ViewModel() {
+//    private val _lessonsList = MutableStateFlow<List<lessons>>(emptyList())
+//    val lessonsList: StateFlow<List<lessons>> = _lessonsList
+//
+//    private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
+//    val coursesList: StateFlow<List<courses>> = _coursesList
+//
+//    private val _isLoading = MutableStateFlow(false)
+//    val isLoading: StateFlow<Boolean> = _isLoading
+//
+//    private val _error = MutableStateFlow<String?>(null)
+//    val error: StateFlow<String?> = _error
+//
+//    init {
+//        getLessons()
+//    }
+//
+//    fun getLessons() {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            _error.value = null
+//            when (val result = repository.getLessons()) {
+//                is LessonResult.Success -> _lessonsList.value = result.data ?: emptyList()
+//                is LessonResult.Error -> _error.value = result.exception.message
+//            }
+//            _isLoading.value = false
+//        }
+//    }
+//
+//
+//    suspend fun getCourses(): List<courses> {
+//        val response = client.from("courses").select().decodeList<courses>()
+//        return response
+//    }
+//
+//
+//
+//    fun deleteLesson(lesson: lessons) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            _error.value = null
+//            when (val result = repository.deleteLesson(lesson.id ?: 0)) {
+//                is LessonResult.Success -> getLessons()
+//                is LessonResult.Error -> _error.value = result.exception.message
+//            }
+//            _isLoading.value = false
+//        }
+//    }
+//
+//    fun updateLesson(lesson: lessons, id_course: Int, title_lession: String, content_lession: String, duration: String) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            _error.value = null
+//            when (val result = repository.updateLesson(
+//                lesson.id ?: 0,
+//                id_course,
+//                title_lession,
+//                content_lession,
+//                duration
+//            )) {
+//                is LessonResult.Success -> getLessons()
+//                is LessonResult.Error -> _error.value = result.exception.message
+//            }
+//            _isLoading.value = false
+//        }
+//    }
+//
+//    fun addLesson(id_course: Int, title_lession: String, content_lession: String, duration: String) {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            _error.value = null
+//            when (val result = repository.addLesson(id_course, title_lession, content_lession, duration)) {
+//                is LessonResult.Success -> getLessons()
+//                is LessonResult.Error -> _error.value = result.exception.message
+//            }
+//            _isLoading.value = false
+//        }
+//    }
+//}
+//
+//class LessonsViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//        if (modelClass.isAssignableFrom(LessonsViewModel::class.java)) {
+//            @Suppress("UNCHECKED_CAST")
+//            return LessonsViewModel(LessonRepository(supabase)) as T
+//        }
+//        throw IllegalArgumentException("Unknown ViewModel class")
+//    }
+//}
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun LessonManagementApp(
+//    supabase: SupabaseClient,
+//    viewModel: LessonsViewModel = viewModel(factory = LessonsViewModelFactory(supabase))
+//) {
+//    val isLoading by viewModel.isLoading.collectAsState()
+//    val error by viewModel.error.collectAsState()
+//    val lessonsList by viewModel.lessonsList.collectAsState()
+//    val coursesList by viewModel.coursesList.collectAsState()
+//
+//    var showAddDialog by remember { mutableStateOf(false) }
+//    var showUpdateDialog by remember { mutableStateOf(false) }
+//    var showDeleteDialog by remember { mutableStateOf(false) }
+//    var selected by remember { mutableStateOf<lessons?>(null) }
+//
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(
+//                title = { Text("Quản lý Bài học") },
+//                actions = {
+//                    Button(
+//                        onClick = { showAddDialog = true },
+//                        modifier = Modifier.padding(end = 16.dp),
+//                        colors = ButtonDefaults.buttonColors(containerColor = Blue)
+//                    ) {
+//                        Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Text("Thêm", color = Color.White)
+//                    }
+//                }
+//            )
+//        }
+//    ) { paddingValues ->
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(paddingValues)
+//        ) {
+//            Image(
+//                painter = painterResource(id = R.drawable.background),
+//                contentDescription = null,
+//                modifier = Modifier.fillMaxSize(),
+//                contentScale = ContentScale.Crop,
+//                alpha = 0.5f
+//            )
+//
+//            when {
+//                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+//                error != null -> {
+//                    Column(
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(16.dp),
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        verticalArrangement = Arrangement.Center
+//                    ) {
+//                        Text(
+//                            text = error ?: "Lỗi không xác định",
+//                            color = Color.Red,
+//                            modifier = Modifier.padding(bottom = 16.dp)
+//                        )
+//                        Button(onClick = { viewModel.getLessons() }) {
+//                            Text("Thử lại")
+//                        }
+//                    }
+//                }
+//                else -> {
+//                    LazyColumn(
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(16.dp),
+//                        verticalArrangement = Arrangement.spacedBy(12.dp)
+//                    ) {
+//                        itemsIndexed(lessonsList) { index, lesson ->
+//                            Card(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+//                                colors = CardDefaults.cardColors(containerColor = Color.White)
+//                            ) {
+//                                Column(modifier = Modifier.padding(16.dp)) {
+//                                    Text("STT: ${index + 1}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+//                                    Text("ID Khóa học: ${lesson.id_course}", fontSize = 14.sp)
+//                                    Text("Tiêu đề bài học: ${lesson.title_lession}", fontSize = 14.sp)
+//                                    Text("Nội dung bài học: ${lesson.content_lession}", fontSize = 14.sp)
+//                                    Text("Thời lượng: ${lesson.duration}", fontSize = 14.sp)
+//
+//                                    Row(
+//                                        modifier = Modifier.fillMaxWidth(),
+//                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+//                                    ) {
+//                                        Button(
+//                                            onClick = {
+//                                                selected = lesson
+//                                                showUpdateDialog = true
+//                                            },
+//                                            colors = ButtonDefaults.buttonColors(containerColor = Blue),
+//                                            modifier = Modifier.weight(1f)
+//                                        ) {
+//                                            Text("Sửa", color = Color.White)
+//                                        }
+//                                        Button(
+//                                            onClick = {
+//                                                selected = lesson
+//                                                showDeleteDialog = true
+//                                            },
+//                                            colors = ButtonDefaults.buttonColors(containerColor = Red),
+//                                            modifier = Modifier.weight(1f)
+//                                        ) {
+//                                            Text("Xóa", color = Color.White)
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            if (showAddDialog) {
+//                LessonDialog(
+//                    title = "Thêm Bài học",
+//                    courses = coursesList,
+//                    onConfirm = { id, title, content, duration ->
+//                        viewModel.addLesson(id, title, content, duration)
+//                        showAddDialog = false
+//                    },
+//                    onDismiss = { showAddDialog = false }
+//                )
+//            }
+//
+//            if (showUpdateDialog && selected != null) {
+//                LessonDialog(
+//                    title = "Cập nhật Bài học",
+//                    courses = coursesList,
+//                    initCourseId = selected!!.id_course,
+//                    initTitle = selected!!.title_lession,
+//                    initContent = selected!!.content_lession,
+//                    initDuration = selected!!.duration,
+//                    onConfirm = { id, title, content, duration ->
+//                        viewModel.updateLesson(selected!!, id, title, content, duration)
+//                        showUpdateDialog = false
+//                    },
+//                    onDismiss = { showUpdateDialog = false }
+//                )
+//            }
+//
+//            if (showDeleteDialog && selected != null) {
+//                AlertDialog(
+//                    onDismissRequest = { showDeleteDialog = false },
+//                    title = { Text("Xác nhận xóa") },
+//                    text = { Text("Bạn có chắc chắn muốn xóa bài học này không?") },
+//                    confirmButton = {
+//                        TextButton(onClick = {
+//                            viewModel.deleteLesson(selected!!)
+//                            showDeleteDialog = false
+//                        }) {
+//                            Text("Xóa", color = Red)
+//                        }
+//                    },
+//                    dismissButton = {
+//                        TextButton(onClick = { showDeleteDialog = false }) {
+//                            Text("Hủy")
+//                        }
+//                    }
+//                )
+//            }
+//        }
+//    }
+//}
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun LessonDialog(
+//    title: String,
+//    courses: List<courses>,
+//    initCourseId: Int = courses.firstOrNull()?.id ?: 0,
+//    initTitle: String = "",
+//    initContent: String = "",
+//    initDuration: String = "",
+//    onConfirm: (Int, String, String, String) -> Unit,
+//    onDismiss: () -> Unit
+//) {
+//    var selectedCourseId: Int? by remember { mutableStateOf(initCourseId) }
+//    var expanded by remember { mutableStateOf(false) }
+//    var titleText by remember { mutableStateOf(initTitle) }
+//    var contentText by remember { mutableStateOf(initContent) }
+//    var durationText by remember { mutableStateOf(initDuration) }
+//
+//    AlertDialog(
+//        onDismissRequest = onDismiss,
+//        title = { Text(title) },
+//        text = {
+//            Column {
+//                ExposedDropdownMenuBox(
+//                    expanded = expanded,
+//                    onExpandedChange = { expanded = !expanded }
+//                ) {
+//                    TextField(
+//                        value = courses.find { it.id == selectedCourseId }?.title_course ?: "",
+//                        onValueChange = {},
+//                        readOnly = true,
+//                        label = { Text("Khóa học") },
+//                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+//                        modifier = Modifier.menuAnchor()
+//                    )
+//                    ExposedDropdownMenu(
+//                        expanded = expanded,
+//                        onDismissRequest = { expanded = false }
+//                    ) {
+//                        courses.forEach { course ->
+//                            DropdownMenuItem(
+//                                text = { Text(course.title_course) },
+//                                onClick = {
+//                                    selectedCourseId = course.id
+//                                    expanded = false
+//                                }
+//                            )
+//                        }
+//                    }
+//                }
+//
+//                if (selectedCourseId != 0) {
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                    TextField(value = titleText, onValueChange = { titleText = it }, label = { Text("Tiêu đề") })
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                    TextField(value = contentText, onValueChange = { contentText = it }, label = { Text("Nội dung") })
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                    TextField(value = durationText, onValueChange = { durationText = it }, label = { Text("Thời lượng") })
+//                } else {
+//                    Spacer(modifier = Modifier.height(8.dp))
+//                    Text("Vui lòng chọn khóa học trước", color = Color.Red)
+//                }
+//            }
+//        },
+//        confirmButton = {
+//            TextButton(onClick = {
+//                if ((selectedCourseId ?: 0) != 0) {
+//                    onConfirm(selectedCourseId ?: 0, titleText, contentText, durationText)
+//                }
+//            }, enabled = (selectedCourseId ?: 0) != 0) {
+//                Text("Lưu")
+//            }
+//        },
+//        dismissButton = {
+//            TextButton(onClick = onDismiss) {
+//                Text("Hủy")
+//            }
+//        }
+//    )
+//}
+
+
+//package com.example.aisupabase.pages
+//
+//import androidx.compose.foundation.Image
+//import androidx.compose.foundation.layout.*
+//import androidx.compose.foundation.lazy.LazyColumn
+//import androidx.compose.foundation.lazy.itemsIndexed
+//import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.filled.Add
+//import androidx.compose.material3.*
+//import androidx.compose.runtime.*
+//import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.platform.LocalContext
+//import androidx.compose.ui.text.font.FontWeight
+//import androidx.compose.ui.unit.dp
+//import androidx.compose.ui.unit.sp
+//import androidx.lifecycle.ViewModel
+//import androidx.lifecycle.ViewModelProvider
+//import androidx.lifecycle.viewmodel.compose.viewModel
+//import androidx.navigation.NavController
+//import com.example.aisupabase.R
+//import com.example.aisupabase.controllers.LessonRepository
+//import com.example.aisupabase.controllers.LessonResult
+//import com.example.aisupabase.controllers.authUser
+//import com.example.aisupabase.config.SupabaseClientProvider
+//import io.github.jan.supabase.SupabaseClient
+//import kotlinx.coroutines.flow.MutableStateFlow
+//import kotlinx.coroutines.flow.StateFlow
+//import kotlinx.coroutines.launch
+//import androidx.lifecycle.viewModelScope
+//import lessons
+//
+//class LessonsViewModel(private val repository: LessonRepository) : ViewModel() {
+//    private val _lessonsList = MutableStateFlow<List<lessons>>(emptyList())
+//    val lessonsList: StateFlow<List<lessons>> = _lessonsList
+//
+//    private val _isLoading = MutableStateFlow(false)
+//    val isLoading: StateFlow<Boolean> = _isLoading
+//
+//    private val _error = MutableStateFlow<String?>(null)
+//    val error: StateFlow<String?> = _error
+//
+//    init {
+//        getLessons()
+//    }
+//
+//    fun getLessons() {
+//        viewModelScope.launch {
+//            _isLoading.value = true
+//            _error.value = null
+//            when (val result = repository.getLessons()) {
+//                is LessonResult.Success -> _lessonsList.value = result.data ?: emptyList()
+//                is LessonResult.Error -> _error.value = result.exception.message
+//            }
+//            _isLoading.value = false
+//        }
+//    }
+//
+//    // Placeholder cho hàm thêm, sửa, xóa
+//    fun addLesson() { /* logic thêm */ }
+//    fun editLesson(lesson: lessons) { /* logic sửa */ }
+//    fun deleteLesson(lesson: lessons) { /* logic xóa */ }
+//}
+//
+//class LessonsViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//        if (modelClass.isAssignableFrom(LessonsViewModel::class.java)) {
+//            @Suppress("UNCHECKED_CAST")
+//            return LessonsViewModel(LessonRepository(supabase)) as T
+//        }
+//        throw IllegalArgumentException("Unknown ViewModel class")
+//    }
+//}
+//
+//@Composable
+//fun Admin_Lessons(navController: NavController) {
+//    val context = LocalContext.current
+//    LaunchedEffect(Unit) {
+//        val session = authUser().getUserSession(context)
+//        val role = session["role"] as? String
+//        val username = session["username"] as? String
+//        if (username == null || role != "admin") {
+//            authUser().clearUserSession(context)
+//            navController.navigate("login")
+//        }
+//    }
+//
+//    val supabase = SupabaseClientProvider.client
+//    LessonsManagementApp(supabase = supabase)
+//}
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun LessonsManagementApp(
+//    supabase: SupabaseClient,
+//    viewModel: LessonsViewModel = viewModel(factory = LessonsViewModelFactory(supabase))
+//) {
+//    val isLoading by viewModel.isLoading.collectAsState()
+//    val error by viewModel.error.collectAsState()
+//    val lessonsList by viewModel.lessonsList.collectAsState()
+//
+//    Scaffold(
+//        topBar = {
+//            TopAppBar(title = { Text("Quản lý Bài học") })
+//        },
+//        floatingActionButton = {
+//            ExtendedFloatingActionButton(
+//                onClick = { viewModel.addLesson() },
+//                icon = { Icon(Icons.Default.Add, contentDescription = "Thêm bài học") },
+//                text = { Text("Thêm") }
+//            )
+//        }
+//    ) { paddingValues ->
+//        Box(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(paddingValues)
+//        ) {
+//            Image(
+//                painter = androidx.compose.ui.res.painterResource(id = R.drawable.background),
+//                contentDescription = null,
+//                modifier = Modifier.fillMaxSize(),
+//                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+//                alpha = 0.5f
+//            )
+//
+//            when {
+//                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+//
+//                error != null -> {
+//                    Column(
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(16.dp),
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        verticalArrangement = Arrangement.Center
+//                    ) {
+//                        Text(
+//                            text = error ?: "Lỗi không xác định",
+//                            color = MaterialTheme.colorScheme.error,
+//                            modifier = Modifier.padding(bottom = 16.dp)
+//                        )
+//                        Button(onClick = { viewModel.getLessons() }) {
+//                            Text("Thử lại")
+//                        }
+//                    }
+//                }
+//
+//                else -> {
+//                    LazyColumn(
+//                        modifier = Modifier
+//                            .fillMaxSize()
+//                            .padding(16.dp),
+//                        verticalArrangement = Arrangement.spacedBy(12.dp)
+//                    ) {
+//                        itemsIndexed(lessonsList) { index, lesson ->
+//                            Card(
+//                                modifier = Modifier
+//                                    .fillMaxWidth()
+//                                    .padding(vertical = 4.dp),
+//                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+//                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+//                            ) {
+//                                Column(
+//                                    modifier = Modifier
+//                                        .fillMaxWidth()
+//                                        .padding(16.dp)
+//                                ) {
+//                                    Text(
+//                                        text = "Số thứ tự: ${index + 1}",
+//                                        fontWeight = FontWeight.Bold,
+//                                        fontSize = 16.sp,
+//                                        modifier = Modifier.padding(bottom = 8.dp)
+//                                    )
+//                                    Text(
+//                                        text = "ID khóa học: ${lesson.id_course}",
+//                                        fontSize = 14.sp,
+//                                        modifier = Modifier.padding(bottom = 8.dp)
+//                                    )
+//                                    Text(
+//                                        text = "Tiêu đề bài học: ${lesson.title_lession}",
+//                                        fontSize = 14.sp,
+//                                        modifier = Modifier.padding(bottom = 8.dp)
+//                                    )
+//                                    Text(
+//                                        text = "Nội dung bài học: ${lesson.content_lession}",
+//                                        fontSize = 14.sp,
+//                                        modifier = Modifier.padding(bottom = 8.dp)
+//                                    )
+//                                    Text(
+//                                        text = "Thời lượng: ${lesson.duration}",
+//                                        fontSize = 14.sp,
+//                                        modifier = Modifier.padding(bottom = 12.dp)
+//                                    )
+//
+//                                    Row(
+//                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+//                                        modifier = Modifier.fillMaxWidth()
+//                                    ) {
+//                                        Button(
+//                                            onClick = { viewModel.editLesson(lesson) },
+//                                            modifier = Modifier.weight(1f)
+//                                        ) {
+//                                            Text("Sửa")
+//                                        }
+//                                        Button(
+//                                            onClick = { viewModel.deleteLesson(lesson) },
+//                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+//                                            modifier = Modifier.weight(1f)
+//                                        ) {
+//                                            Text("Xóa")
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
+
 package com.example.aisupabase.pages
 
 import androidx.compose.foundation.Image
@@ -6,32 +625,74 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
+import com.example.aisupabase.controllers.LessonRepository
+import com.example.aisupabase.controllers.LessonResult
+import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.SupabaseClientProvider.client
-import com.example.aisupabase.controllers.*
-import com.example.aisupabase.ui.theme.Blue
-import com.example.aisupabase.ui.theme.Red
-import courses
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.supabaseJson
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
+import io.github.jan.supabase.postgrest.postgrest
 import lessons
+import kotlin.collections.find
+
+// Thêm data class Course để demo (bạn có thể lấy từ DB nếu có)
+data class Course(val id: String, val title: String)
+
+class LessonsViewModel(private val repository: LessonRepository) : ViewModel() {
+    private val _lessonsList = MutableStateFlow<List<lessons>>(emptyList())
+    val lessonsList: StateFlow<List<lessons>> = _lessonsList
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
+    // Hàm lấy lesson theo courseId
+    fun getLessonsByCourse(courseId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = repository.getLessons(courseId)) {
+                is LessonResult.Success -> _lessonsList.value = result.data ?: emptyList()
+                is LessonResult.Error -> _error.value = result.exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    // Placeholder cho hàm thêm, sửa, xóa
+    fun addLesson() { /* logic thêm */ }
+    fun editLesson(lesson: lessons) { /* logic sửa */ }
+    fun deleteLesson(lesson: lessons) { /* logic xóa */ }
+}
+
+class LessonsViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LessonsViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return LessonsViewModel(LessonRepository(supabase)) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 @Composable
 fun Admin_Lessons(navController: NavController) {
@@ -47,130 +708,49 @@ fun Admin_Lessons(navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    LessonManagementApp(supabase = supabase)
-}
-
-class LessonsViewModel(private val repository: LessonRepository) : ViewModel() {
-    private val _lessonsList = MutableStateFlow<List<lessons>>(emptyList())
-    val lessonsList: StateFlow<List<lessons>> = _lessonsList
-
-    private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
-    val coursesList: StateFlow<List<courses>> = _coursesList
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
-
-    init {
-        getLessons()
-    }
-
-    fun getLessons() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            when (val result = repository.getLessons()) {
-                is LessonResult.Success -> _lessonsList.value = result.data ?: emptyList()
-                is LessonResult.Error -> _error.value = result.exception.message
-            }
-            _isLoading.value = false
-        }
-    }
-
-
-    suspend fun getCourses(): List<courses> {
-        val response = client.from("courses").select().decodeList<courses>()
-        return response
-    }
-
-
-
-    fun deleteLesson(lesson: lessons) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            when (val result = repository.deleteLesson(lesson.id ?: 0)) {
-                is LessonResult.Success -> getLessons()
-                is LessonResult.Error -> _error.value = result.exception.message
-            }
-            _isLoading.value = false
-        }
-    }
-
-    fun updateLesson(lesson: lessons, id_course: Int, title_lession: String, content_lession: String, duration: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            when (val result = repository.updateLesson(
-                lesson.id ?: 0,
-                id_course,
-                title_lession,
-                content_lession,
-                duration
-            )) {
-                is LessonResult.Success -> getLessons()
-                is LessonResult.Error -> _error.value = result.exception.message
-            }
-            _isLoading.value = false
-        }
-    }
-
-    fun addLesson(id_course: Int, title_lession: String, content_lession: String, duration: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            when (val result = repository.addLesson(id_course, title_lession, content_lession, duration)) {
-                is LessonResult.Success -> getLessons()
-                is LessonResult.Error -> _error.value = result.exception.message
-            }
-            _isLoading.value = false
-        }
-    }
-}
-
-class LessonsViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LessonsViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return LessonsViewModel(LessonRepository(supabase)) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
+    LessonsManagementApp(supabase = supabase)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LessonManagementApp(
+fun LessonsManagementApp(
     supabase: SupabaseClient,
     viewModel: LessonsViewModel = viewModel(factory = LessonsViewModelFactory(supabase))
 ) {
+    // Giả sử có danh sách khóa học tĩnh (bạn có thể lấy từ DB nếu có)
+    val courses = listOf(
+        Course("course1", "Khóa học 1"),
+        Course("course2", "Khóa học 2"),
+        Course("course3", "Khóa học 3"),
+    )
+
+    var selectedCourseId by remember { mutableStateOf(courses.first().id) }
+
+    LaunchedEffect(selectedCourseId) {
+        viewModel.getLessonsByCourse(selectedCourseId)
+    }
+
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val lessonsList by viewModel.lessonsList.collectAsState()
-    val coursesList by viewModel.coursesList.collectAsState()
-
-    var showAddDialog by remember { mutableStateOf(false) }
-    var showUpdateDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf<lessons?>(null) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Quản lý Bài học") },
-                actions = {
-                    Button(
-                        onClick = { showAddDialog = true },
-                        modifier = Modifier.padding(end = 16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Blue)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm", color = Color.White)
-                    }
-                }
+            Column {
+                TopAppBar(title = { Text("Quản lý Bài học") })
+                // Dropdown chọn course
+                CourseDropdown(
+                    courses = courses,
+                    selectedCourseId = selectedCourseId,
+                    onCourseSelected = { selectedCourseId = it.toString() }
+                )
+            }
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { viewModel.addLesson() },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Thêm bài học") },
+                text = { Text("Thêm") }
             )
         }
     ) { paddingValues ->
@@ -180,15 +760,16 @@ fun LessonManagementApp(
                 .padding(paddingValues)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.background),
+                painter = androidx.compose.ui.res.painterResource(id = R.drawable.background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 alpha = 0.5f
             )
 
             when {
                 isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+
                 error != null -> {
                     Column(
                         modifier = Modifier
@@ -199,14 +780,15 @@ fun LessonManagementApp(
                     ) {
                         Text(
                             text = error ?: "Lỗi không xác định",
-                            color = Color.Red,
+                            color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
-                        Button(onClick = { viewModel.getLessons() }) {
+                        Button(onClick = { viewModel.getLessonsByCourse(selectedCourseId) }) {
                             Text("Thử lại")
                         }
                     }
                 }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier
@@ -216,40 +798,60 @@ fun LessonManagementApp(
                     ) {
                         itemsIndexed(lessonsList) { index, lesson ->
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text("STT: ${index + 1}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                    Text("ID Khóa học: ${lesson.id_course}", fontSize = 14.sp)
-                                    Text("Tiêu đề bài học: ${lesson.title_lession}", fontSize = 14.sp)
-                                    Text("Nội dung bài học: ${lesson.content_lession}", fontSize = 14.sp)
-                                    Text("Thời lượng: ${lesson.duration}", fontSize = 14.sp)
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                ) {
+                                    Text(
+                                        text = "Số thứ tự: ${index + 1}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(
+                                        text = "ID khóa học: ${lesson.id_course}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(
+                                        text = "Tiêu đề bài học: ${lesson.title_lession}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(
+                                        text = "Nội dung bài học: ${lesson.content_lession}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(
+                                        text = "Thời lượng: ${lesson.duration}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
 
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Button(
-                                            onClick = {
-                                                selected = lesson
-                                                showUpdateDialog = true
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Blue),
+                                            onClick = { viewModel.editLesson(lesson) },
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text("Sửa", color = Color.White)
+                                            Text("Sửa")
                                         }
                                         Button(
-                                            onClick = {
-                                                selected = lesson
-                                                showDeleteDialog = true
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Red),
+                                            onClick = { viewModel.deleteLesson(lesson) },
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text("Xóa", color = Color.White)
+                                            Text("Xóa")
                                         }
                                     }
                                 }
@@ -258,52 +860,47 @@ fun LessonManagementApp(
                     }
                 }
             }
+        }
+    }
+}
 
-            if (showAddDialog) {
-                LessonDialog(
-                    title = "Thêm Bài học",
-                    courses = coursesList,
-                    onConfirm = { id, title, content, duration ->
-                        viewModel.addLesson(id, title, content, duration)
-                        showAddDialog = false
-                    },
-                    onDismiss = { showAddDialog = false }
-                )
-            }
+@Composable
+fun CourseDropdown(
+    courses: List<Course>,
+    selectedCourseId: String,
+    onCourseSelected: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedCourse = courses.find { it.id == selectedCourseId }
 
-            if (showUpdateDialog && selected != null) {
-                LessonDialog(
-                    title = "Cập nhật Bài học",
-                    courses = coursesList,
-                    initCourseId = selected!!.id_course,
-                    initTitle = selected!!.title_lession,
-                    initContent = selected!!.content_lession,
-                    initDuration = selected!!.duration,
-                    onConfirm = { id, title, content, duration ->
-                        viewModel.updateLesson(selected!!, id, title, content, duration)
-                        showUpdateDialog = false
-                    },
-                    onDismiss = { showUpdateDialog = false }
-                )
-            }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        OutlinedTextField(
+            value = selectedCourse?.id ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Chọn khóa học") },
+            trailingIcon = {
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            if (showDeleteDialog && selected != null) {
-                AlertDialog(
-                    onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Xác nhận xóa") },
-                    text = { Text("Bạn có chắc chắn muốn xóa bài học này không?") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.deleteLesson(selected!!)
-                            showDeleteDialog = false
-                        }) {
-                            Text("Xóa", color = Red)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDeleteDialog = false }) {
-                            Text("Hủy")
-                        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            courses.forEach { course ->
+                DropdownMenuItem(
+                    text = { Text(course.id) },
+                    onClick = {
+                        course.id?.let { onCourseSelected(it) }
+                        expanded = false
                     }
                 )
             }
@@ -311,83 +908,9 @@ fun LessonManagementApp(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LessonDialog(
-    title: String,
-    courses: List<courses>,
-    initCourseId: Int = courses.firstOrNull()?.id ?: 0,
-    initTitle: String = "",
-    initContent: String = "",
-    initDuration: String = "",
-    onConfirm: (Int, String, String, String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var selectedCourseId: Int? by remember { mutableStateOf(initCourseId) }
-    var expanded by remember { mutableStateOf(false) }
-    var titleText by remember { mutableStateOf(initTitle) }
-    var contentText by remember { mutableStateOf(initContent) }
-    var durationText by remember { mutableStateOf(initDuration) }
+private fun ColumnScope.onCourseSelected(string: String) {}
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
-                    TextField(
-                        value = courses.find { it.id == selectedCourseId }?.title_course ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Khóa học") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        courses.forEach { course ->
-                            DropdownMenuItem(
-                                text = { Text(course.title_course) },
-                                onClick = {
-                                    selectedCourseId = course.id
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
 
-                if (selectedCourseId != 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextField(value = titleText, onValueChange = { titleText = it }, label = { Text("Tiêu đề") })
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextField(value = contentText, onValueChange = { contentText = it }, label = { Text("Nội dung") })
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextField(value = durationText, onValueChange = { durationText = it }, label = { Text("Thời lượng") })
-                } else {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Vui lòng chọn khóa học trước", color = Color.Red)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                if ((selectedCourseId ?: 0) != 0) {
-                    onConfirm(selectedCourseId ?: 0, titleText, contentText, durationText)
-                }
-            }, enabled = (selectedCourseId ?: 0) != 0) {
-                Text("Lưu")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Hủy")
-            }
-        }
-    )
-}
+
+
+

@@ -1,4 +1,3 @@
-import com.example.aisupabase.models.Users
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult

@@ -431,6 +431,8 @@ fun Admin_Courses(navController: NavController) {
         }
     }
 
+    //val session = authUser().getUserSession(context)
+    // val id = session["id"] as? Int ?: 0
     val supabase = SupabaseClientProvider.client
     CourseManagementApp(supabase = supabase)
 }
@@ -529,7 +531,7 @@ fun CourseManagementApp(
                                     )
 
                                     Text(
-                                        text = "Tiêu đề khóa học: ${course.title_course}",
+                                        text = "Tiêu đề: ${course.title_course}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
@@ -550,7 +552,7 @@ fun CourseManagementApp(
                                     )
 
                                     UsersText(supabase, course.user_create)
-
+                                    // lo trinh nao ?
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp)

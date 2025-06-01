@@ -8,5 +8,5 @@ data class blogs(
     val url_image: String,
     val id_tag: Int, //tags
     val content_blog: String,
-    val created_at: String? = null,
+    val created_at: String,
 )

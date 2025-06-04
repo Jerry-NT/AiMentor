@@ -1,5 +1,8 @@
 package com.example.aisupabase.pages
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +38,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.aisupabase.R
+import com.example.aisupabase.cloudinary.CloudinaryService
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.config.handle.getPublicIdFromUrl
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.RoadMapRepository
@@ -61,6 +67,10 @@ import kotlin.collections.find
 import kotlin.collections.forEach
 import kotlin.let
 import com.example.aisupabase.config.handle.isValidTitle
+import com.example.aisupabase.config.handle.uriToFile
+import kotlinx.coroutines.coroutineScope
+import java.io.File
+
 // ViewModel quản lý state courses
 class CoursesViewModel(private val repository: CourseRepository, private val roadmap_repository: RoadMapRepository) : ViewModel() {
     private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
@@ -330,6 +340,38 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
         val context = LocalContext.current
         val session = authUser().getUserSession(context)
         val id = session["id"] as? Int ?: 0
+        var title_course by remember { mutableStateOf("") }
+        var errorMsg by remember { mutableStateOf<String?>(null) }
+
+        var description by remember { mutableStateOf("") }
+        var errorcontentMsg by remember { mutableStateOf<String?>(null) }
+        var errorrmMsg by remember { mutableStateOf<String?>(null) }
+
+        // Thêm state cho ảnh
+        var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+        var imageUrl by remember { mutableStateOf<String?>(null) }
+        var imagePublicId by remember { mutableStateOf<String?>(null) }
+
+        var isUploading by remember { mutableStateOf(false) }
+        var uploadError by remember { mutableStateOf<String?>(null) }
+        var imageFileToUpload by remember { mutableStateOf<File?>(null) }
+
+        // Launcher để chọn ảnh từ thiết bị
+        val imagePickerLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+                uri: Uri? ->
+            imageUri = uri
+            uploadError = null
+            if (uri != null) {
+                val file = uriToFile(context, uri)
+                if (file != null) {
+                    imageFileToUpload = file // Đánh dấu file cần upload
+                } else {
+                    uploadError = "Không thể đọc file ảnh!"
+                    isUploading = false
+                }
+            }
+        }
 
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
@@ -338,11 +380,7 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                     .padding(16.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                var title_course by remember { mutableStateOf("") }
-                var errorMsg by remember { mutableStateOf<String?>(null) }
 
-                var description by remember { mutableStateOf("") }
-                var errorcontentMsg by remember { mutableStateOf<String?>(null) }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -427,11 +465,45 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                             }
                         }
                     }
+                    if (errorrmMsg != null) {
+                        Text(errorrmMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Chọn ảnh & hiển thị ảnh đã chọn
+                    Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            enabled = !isUploading,
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) {
+                            Text(if (isUploading) "Đang tải..." else "Chọn ảnh", color = Color.White)
+                        }
+                        if (uploadError != null) {
+                            Text(uploadError!!, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Ảnh đã chọn",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .padding(top = 8.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val coroutineScope = rememberCoroutineScope()
+
                         Button(
                             onClick = {
                                 var check = true
@@ -457,10 +529,37 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                     check = false
                                 }
 
-                                if (check){
+                                if (selectedRoadmap == null) {
+                                    errorrmMsg = "Vui lòng chọn lộ trình"
+                                    check = false
+                                }
+
+                                if (imageUri == null) {
+                                    uploadError = "Vui lòng chọn và upload ảnh!"
+                                    check = false
+                                }
+
+                                if(check) {
+                                    isUploading = true
+                                    uploadError = null
                                     val roadmapID = selectedRoadmap?.id ?: 0
-                                    viewModel.addCourse(title_course, description, "1", "1",false, id, roadmapID)
-                                    showAddDialog = false
+                                    coroutineScope.launch {
+                                        val file = imageFileToUpload
+                                        if (file != null) {
+                                            val url = CloudinaryService.uploadImage(file)
+                                            if (url != null) {
+                                                imageUrl = url
+                                                imagePublicId = getPublicIdFromUrl(url)
+                                                viewModel.addCourse(title_course, description, imagePublicId ?: "", imageUrl ?: "",false, id, roadmapID)
+                                                showAddDialog = false
+                                                isUploading = false
+                                            } else {
+                                                uploadError = "Upload ảnh thất bại!"
+                                                isUploading = false
+                                            }
+                                        }
+                                        isUploading = false
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f),

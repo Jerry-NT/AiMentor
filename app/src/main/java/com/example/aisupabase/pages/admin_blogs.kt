@@ -344,10 +344,19 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
         var expanded by remember { mutableStateOf(false) }
         var selectedTag: Tags? by remember { mutableStateOf(null) }
 
+        var title_blog by remember { mutableStateOf("") }
+        var errorMsg by remember { mutableStateOf<String?>(null) }
+
+        var content by remember { mutableStateOf("") }
+        var errorcontentMsg by remember { mutableStateOf<String?>(null) }
+        var errortagMsg by remember { mutableStateOf<String?>(null) }
+
         // Thêm state cho ảnh
         var imageUri by remember { mutableStateOf<Uri?>(null) }
+
         var imageUrl by remember { mutableStateOf<String?>(null) }
         var imagePublicId by remember { mutableStateOf<String?>(null) }
+
         var isUploading by remember { mutableStateOf(false) }
         var uploadError by remember { mutableStateOf<String?>(null) }
         var imageFileToUpload by remember { mutableStateOf<File?>(null) }
@@ -377,11 +386,7 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                     .padding(16.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                var title_blog by remember { mutableStateOf("") }
-                var errorMsg by remember { mutableStateOf<String?>(null) }
 
-                var content by remember { mutableStateOf("") }
-                var errorcontentMsg by remember { mutableStateOf<String?>(null) }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -472,6 +477,10 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                             }
                         }
                     }
+                    // kiểm tra xem đã chọn tag hay chưa
+                    if (errortagMsg != null) {
+                        Text(errortagMsg!!, color = Color.Red, fontSize = 12.sp)
+                    }
 
                     // Chọn ảnh & hiển thị ảnh đã chọn
                     Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
@@ -529,6 +538,11 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
 
                                 if (imageUri == null) {
                                     uploadError = "Vui lòng chọn và upload ảnh!"
+                                    check = false
+                                }
+
+                                if (selectedTag == null) {
+                                    errortagMsg = "Vui lòng chọn loại blog!"
                                     check = false
                                 }
 

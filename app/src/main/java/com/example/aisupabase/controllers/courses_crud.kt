@@ -39,7 +39,7 @@ class CourseRepository(private val supabase: SupabaseClient) {
         try {
             val result = supabase.postgrest["courses"]
                 .insert(
-                    courses(null,title_course, des_course, url_image, public_id_image, is_private,id_roadmap, user_create, now().toString())
+                    courses(null,title_course, des_course, public_id_image,url_image, is_private,id_roadmap, user_create, now().toString())
                 )
             return@withContext CourseResult.Success(Unit, result)
         } catch (e: Exception) {

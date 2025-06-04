@@ -106,15 +106,15 @@ class LessonRepository(private val supabase: SupabaseClient) {
 
     suspend fun addLesson(
         id_course: Int,
-        title_lession: String,
-        content_lession: String,
+        title_lesson: String,
+        content_lesson: String,
         duration: String
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val data = mapOf(
                 "id_course" to id_course,
-                "title_lession" to title_lession,
-                "content_lession" to content_lession,
+                "title_lesson" to title_lesson,
+                "content_lesson" to content_lesson,
                 "duration" to duration
             )
             val result = supabase.from("lessons").insert(data)
@@ -127,15 +127,15 @@ class LessonRepository(private val supabase: SupabaseClient) {
     suspend fun updateLesson(
         id: Int,
         id_course: Int,
-        title_lession: String,
-        content_lession: String,
+        title_lesson: String,
+        content_lesson: String,
         duration: String
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val data = mapOf(
                 "id_course" to id_course,
-                "title_lession" to title_lession,
-                "content_lession" to content_lession,
+                "title_lesson" to title_lesson,
+                "content_lesson" to content_lesson,
                 "duration" to duration
             )
             val result = supabase.from("lessons").update(data) {

@@ -217,12 +217,12 @@ fun LessonsManagementApp(
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                     Text(
-                                        text = "Tiêu đề bài học: ${lesson.title_lession}",
+                                        text = "Tiêu đề bài học: ${lesson.title_lesson}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                     Text(
-                                        text = "Nội dung bài học: ${lesson.content_lession}",
+                                        text = "Nội dung bài học: ${lesson.content_lesson}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )

@@ -57,7 +57,6 @@ import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.RoadMapRepository
 import com.example.aisupabase.controllers.RoadMapResult
 import com.example.aisupabase.controllers.authUser
-import com.example.aisupabase.models.Tags
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import course_roadmaps
@@ -65,7 +64,7 @@ import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
+import com.example.aisupabase.config.handle.isValidTitle
 // viewmodels
 class RoadMapViewModel (private val repository: RoadMapRepository): ViewModel(){
     private val _roadmapList = MutableStateFlow<List<course_roadmaps>>(emptyList())
@@ -139,6 +138,7 @@ class RoadMapViewModelFactory(private val repository: RoadMapRepository) :ViewMo
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+
 //  Main Activity
 @Composable
 fun Admin_Roadmaps( navController: NavController) {
@@ -158,19 +158,11 @@ fun Admin_Roadmaps( navController: NavController) {
     RoadMapManagementApp(supabase)
 }
 // Validation function for  title
-private fun isValidTitle(title: String): Boolean {
-    val trimmed = title.trim()
-    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$")
-    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
-}
 
 // CRUD  ViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RoadMapManagementApp(
-    supabase: SupabaseClient,
-    viewModel: RoadMapViewModel = viewModel(factory = RoadMapViewModelFactory(RoadMapRepository(supabase)))
-) {
+fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel = viewModel(factory = RoadMapViewModelFactory(RoadMapRepository(supabase)))) {
     val roadmaps by viewModel.roadmapList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -192,7 +184,7 @@ fun RoadMapManagementApp(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm", color = Color.White)
+                        Text("Thêm lộ trình", color = Color.White)
                     }
                 }
             )
@@ -355,10 +347,18 @@ fun RoadMapManagementApp(
                     ) {
                         Button(
                             onClick = {
+                                var check = true
                                 if (!isValidTitle(roadmapTitle)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                } else {
+                                    check = false
+                                }
+                                if(roadmapTitle.length > 150)
+                                {
+                                    errorMsg = "Tiêu đề không được quá 150 ký tự"
+                                    check = false
+                                }
+                                if (check) {
                                     viewModel.addRoadMap(roadmapTitle.trim())
                                     showAddDialog = false
                                 }
@@ -435,7 +435,7 @@ fun RoadMapManagementApp(
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
-                                if(roadmapTitle.length < 150)
+                                if(roadmapTitle.length > 150)
                                 {
                                     errorMsg = "Tiêu đề không được quá 150 ký tự"
                                     check = false

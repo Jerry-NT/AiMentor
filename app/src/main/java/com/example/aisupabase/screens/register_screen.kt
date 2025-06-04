@@ -25,13 +25,14 @@ import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.models.UserRole
+import com.example.aisupabase.models.Users
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import com.example.aisupabase.models.Users
+
 // Main activity
 @Composable
 fun RegisterScreen(navController: NavController) {

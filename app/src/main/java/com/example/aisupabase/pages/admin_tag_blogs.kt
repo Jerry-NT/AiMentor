@@ -26,18 +26,18 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
+import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.TagRepository
 import com.example.aisupabase.controllers.TagResult
-import com.example.aisupabase.models.Tags
-import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
+import com.example.aisupabase.models.Tags
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
+import com.example.aisupabase.config.handle.isValidTitle
 // Viewmodel sử dụng để quản lý trạng thái của danh sách tags -> CRUD operations
 class TagViewModel(private val repository: TagRepository) : ViewModel() {
     private val _tagList = MutableStateFlow<List<Tags>>(emptyList())
@@ -129,19 +129,10 @@ fun Admin_Tag_Blogs(navController: NavController) {
     TagManagementApp(supabase)
 }
 
-// Validation function for tag title
-private fun isValidTagTitle(title: String): Boolean {
-    val trimmed = title.trim()
-    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$")
-    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
-}
-
 // CRUD view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TagManagementApp(
-    supabase: SupabaseClient,
-    viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))) {
+fun TagManagementApp(supabase: SupabaseClient, viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))) {
     val tags by viewModel.tagList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -162,7 +153,7 @@ fun TagManagementApp(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Thêm", color = Color.White)
+                            Text("Thêm loại blog", color = Color.White)
                         }
                     }
                 )
@@ -325,12 +316,12 @@ fun TagManagementApp(
                                 Button(
                                     onClick = {
                                         var check = true
-                                        if (!isValidTagTitle(tagTitle)) {
+                                        if (!isValidTitle(tagTitle)) {
                                             errorMsg =
                                                 "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                             check = false
                                         }
-                                        if (tagTitle.length < 150) {
+                                        if (tagTitle.length > 150) {
                                             errorMsg =
                                                 "Tiêu đề tối đa 150 ký tự)"
                                             check = false
@@ -408,12 +399,12 @@ fun TagManagementApp(
                                 Button(
                                     onClick = {
                                         var check = true
-                                        if (!isValidTagTitle(tagTitle)) {
+                                        if (!isValidTitle(tagTitle)) {
                                             errorMsg =
                                                 "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                             check = false
                                         }
-                                        if (tagTitle.length < 150) {
+                                        if (tagTitle.length > 150) {
                                             errorMsg =
                                                 "Tiêu đề tối đa 150 ký tự)"
                                             check = false

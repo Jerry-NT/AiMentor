@@ -1,14 +1,6 @@
 package com.example.aisupabase.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
-import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.controllers.authUser
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,18 +14,25 @@ import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.aisupabase.R
+import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.controllers.authUser
 
 // Data class cho menu items
 data class MenuItem(
@@ -182,7 +181,7 @@ private fun defaultMenuItems(navController: NavController): List<MenuItem> {
         ),
         MenuItem(
             id = "user_management_4",
-            title = "Quản lý Tag Blogs",
+            title = "Quản lý loại Blogs",
             icon = Icons.Default.AccountBox,
             onClick = { navController.navigate("admin_tag_blogs") }
         ),
@@ -203,6 +202,13 @@ private fun defaultMenuItems(navController: NavController): List<MenuItem> {
             title = "Quản lý Hóa đơn",
             icon = Icons.Default.AccountBox,
             onClick = { navController.navigate("admin_user_invoices") }
+        )
+        ,
+        MenuItem(
+            id = "user_management_8",
+            title = "Quản lý câu hỏi",
+            icon = Icons.Default.AccountBox,
+            onClick = { navController.navigate("admin_question") }
         )
 
     )

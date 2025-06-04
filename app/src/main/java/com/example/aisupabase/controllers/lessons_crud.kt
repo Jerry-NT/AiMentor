@@ -80,12 +80,12 @@
 
 package com.example.aisupabase.controllers
 
-import lessons
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import lessons
 
 sealed class LessonResult<out T> {
     data class Success<T>(val data: T?, val raw: PostgrestResult? = null) : LessonResult<T>()

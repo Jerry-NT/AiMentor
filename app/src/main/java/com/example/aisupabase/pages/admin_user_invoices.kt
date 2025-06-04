@@ -1,6 +1,5 @@
 package com.example.aisupabase.pages
 
-import UserResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,9 +40,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.config.handle.formatTransactionDate
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
-import com.example.aisupabase.models.type_accounts
 import invoices
 import invoicesRepository
 import io.github.jan.supabase.SupabaseClient
@@ -221,16 +220,6 @@ fun invoicesScreen(
     }
 }
 
-fun formatTransactionDate(dateString: String): String {
-    return try {
-        val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss") // adjust if needed
-        val outputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-        val dateTime = LocalDateTime.parse(dateString, inputFormatter)
-        outputFormatter.format(dateTime)
-    } catch (e: Exception) {
-        dateString // fallback if parsing fails
-    }
-}
 
 @Composable
 fun UsersText(supabase: SupabaseClient, id: Int) {

@@ -64,7 +64,7 @@ import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
+import com.example.aisupabase.config.handle.isValidTitle
 // view model
 class TypeAccountsViewModel (private val repository: TypeAccountRepository):ViewModel() {
     private val _typeAccountsList = MutableStateFlow<List<type_accounts>>(emptyList())
@@ -169,18 +169,11 @@ fun Admin_Type_Accounts( navController: NavController) {
     val supabase = SupabaseClientProvider.client
     typeAccountManagementApp(supabase)
 }
-private fun isValidTagTitle(title: String): Boolean {
-    val trimmed = title.trim()
-    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$")
-    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
-}
+
 // crud view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun typeAccountManagementApp(
-    supabase: SupabaseClient,
-    viewModel: TypeAccountsViewModel = viewModel(factory = TypeAccountsViewModelFactory (supabase))
-){
+fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsViewModel = viewModel(factory = TypeAccountsViewModelFactory (supabase))){
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val typeAccountsList by viewModel.typeAccountsList.collectAsState()
@@ -202,7 +195,7 @@ fun typeAccountManagementApp(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm", color = Color.White)
+                        Text("Thêm loaại tài khoản", color = Color.White)
                     }
                 }
             )
@@ -446,14 +439,22 @@ fun typeAccountManagementApp(
                         Button(
                             onClick = {
                                 var hasError = false
-                                if (!isValidTagTitle(typeAccount.trim())) {
+                                if (!isValidTitle(typeAccount.trim())) {
                                     errorMsg =
                                         "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     hasError = true
                                 }
-                                if (!isValidTagTitle(desAccount)) {
+                                if(typeAccount.length<150){
+                                    errorMsg = "Loại tài khoản không được quá 150 ký tự"
+                                    hasError = true
+                                }
+                                if (!isValidTitle(desAccount)) {
                                     erroDesMsg =
                                         "Mô tả không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    hasError = true
+                                }
+                                if (desAccount.length < 150) {
+                                    erroDesMsg = "Mô tả không được quá 150 ký tự"
                                     hasError = true
                                 }
                                 val maxCourse = max_course_Account.toIntOrNull()
@@ -592,12 +593,20 @@ fun typeAccountManagementApp(
                         Button(
                             onClick = {
                                 var hasError = false
-                                if (!isValidTagTitle(typeAccount.trim())) {
+                                if (!isValidTitle(typeAccount.trim())) {
                                     errorMsg = "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     hasError = true
                                 }
-                                if (!isValidTagTitle(desAccount.trim())) {
+                                if (typeAccount.length < 150) {
+                                    errorMsg = "Loại tài khoản không được quá 150 ký tự"
+                                    hasError = true
+                                }
+                                if (!isValidTitle(desAccount.trim())) {
                                     erroDesMsg = "Mô tả không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    hasError = true
+                                }
+                                if (desAccount.length < 150) {
+                                    erroDesMsg = "Mô tả không được quá 150 ký tự"
                                     hasError = true
                                 }
                                 val maxCourse = max_course_Account.toIntOrNull()

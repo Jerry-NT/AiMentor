@@ -16,9 +16,9 @@ import com.example.aisupabase.pages.Admin_Type_Accounts
 import com.example.aisupabase.pages.Admin_User_Invoids
 import com.example.aisupabase.pages.Admin_Users
 import com.example.aisupabase.screens.AdminHomeScreen
+import com.example.aisupabase.screens.ClientHomeScreen
 import com.example.aisupabase.screens.LoginScreen
 import com.example.aisupabase.screens.RegisterScreen
-import com.example.aisupabase.screens.ClientHomeScreen
 
 class MainActivity : ComponentActivity() {
 

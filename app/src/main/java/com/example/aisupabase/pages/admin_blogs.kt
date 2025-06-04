@@ -1,36 +1,5 @@
 package com.example.aisupabase.pages
 
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import blogs
-import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.controllers.BlogRepository
-import com.example.aisupabase.controllers.BlogResult
-import com.example.aisupabase.controllers.authUser
-import io.github.jan.supabase.SupabaseClient
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import androidx.compose.material3.Text
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -42,20 +11,60 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.aisupabase.R
-import com.example.aisupabase.ui.theme.Blue
-import com.example.aisupabase.ui.theme.Red
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import blogs
 import coil.compose.AsyncImage
+import com.example.aisupabase.R
+import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.controllers.BlogRepository
+import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.controllers.TagRepository
 import com.example.aisupabase.controllers.TagResult
+import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Tags
+import com.example.aisupabase.ui.theme.Blue
+import com.example.aisupabase.ui.theme.Red
+import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlin.Boolean
+import kotlin.IllegalArgumentException
+import kotlin.Int
+import kotlin.OptIn
+import kotlin.String
+import kotlin.Suppress
+import kotlin.Unit
+import kotlin.collections.List
+import kotlin.collections.emptyList
+import kotlin.collections.find
+import kotlin.collections.forEach
+import kotlin.let
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.aisupabase.cloudinary.CloudinaryService
+import com.example.aisupabase.config.handle.formatTransactionDate
+import com.example.aisupabase.config.handle.getPublicIdFromUrl
+import com.example.aisupabase.config.handle.uriToFile
+import com.example.aisupabase.config.handle.isValidTitle
+import java.io.File
 
 //ViewModel for managing the state of blogs
 class BlogsViewModel(private val repository: BlogRepository, private val tag_repository: TagRepository) : ViewModel() {
@@ -136,7 +145,6 @@ class BlogsViewModel(private val repository: BlogRepository, private val tag_rep
     }
 }
 
-
 //  Main Activity for Admin Blogs Page
 @Composable
 fun Admin_Blogs( navController: NavController) {
@@ -170,10 +178,7 @@ class BlogsViewModelFactory(private val supabase: SupabaseClient) : ViewModelPro
 // Main Composable function for Blog Management
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlogManagementApp(
-    supabase: SupabaseClient,
-    viewModel: BlogsViewModel = viewModel(factory = BlogsViewModelFactory(supabase))
-) {
+fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = viewModel(factory = BlogsViewModelFactory(supabase))) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -194,9 +199,9 @@ fun BlogManagementApp(
                         modifier = Modifier.padding(end = 16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Blue)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = "Thêm blog", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm", color = Color.White)
+                        Text("Thêm blog", color = Color.White)
                     }
                 }
             )
@@ -289,14 +294,11 @@ fun BlogManagementApp(
                                     )
 
                                     // Ngày tạo
-                                    blog.created_at?.let {
-                                        Text(
-                                            text = "Ngày tạo: $it",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                        )
-                                    }
+                                    Text(
+                                        text = "Ngày tạo: ${formatTransactionDate(blog.created_at)}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
 
                                     // Thao tác
                                     Row(
@@ -335,12 +337,38 @@ fun BlogManagementApp(
         }
     }
 
+
     // Add Dialog
     if (showAddDialog) {
         val tagsList by viewModel.tagList.collectAsState()
         var expanded by remember { mutableStateOf(false) }
         var selectedTag: Tags? by remember { mutableStateOf(null) }
 
+        // Thêm state cho ảnh
+        var imageUri by remember { mutableStateOf<Uri?>(null) }
+        var imageUrl by remember { mutableStateOf<String?>(null) }
+        var imagePublicId by remember { mutableStateOf<String?>(null) }
+        var isUploading by remember { mutableStateOf(false) }
+        var uploadError by remember { mutableStateOf<String?>(null) }
+        var imageFileToUpload by remember { mutableStateOf<File?>(null) }
+
+        val context = LocalContext.current
+
+        // Launcher để chọn ảnh từ thiết bị
+        val imagePickerLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+            uri: Uri? ->
+            imageUri = uri
+            uploadError = null
+            if (uri != null) {
+                val file = uriToFile(context, uri)
+                if (file != null) {
+                    imageFileToUpload = file // Đánh dấu file cần upload
+                } else {
+                    uploadError = "Không thể đọc file ảnh!"
+                    isUploading = false
+                }
+            }
+        }
 
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
@@ -363,13 +391,16 @@ fun BlogManagementApp(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    )
+                    {
                         Text("Thêm blog", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showAddDialog = false }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
+
                     Spacer(modifier = Modifier.height(16.dp))
+                    // Tiêu đề và nội dung
                     Text(
                         "Tiêu đề",
                         fontSize = 14.sp,
@@ -391,6 +422,8 @@ fun BlogManagementApp(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    // Nội dung blog
                     Text(
                         "Nội dung",
                         fontSize = 14.sp,
@@ -412,6 +445,7 @@ fun BlogManagementApp(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Chọn tag
                     Text("Chọn tag", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                     Box {
                         OutlinedTextField(
@@ -438,11 +472,39 @@ fun BlogManagementApp(
                             }
                         }
                     }
+
+                    // Chọn ảnh & hiển thị ảnh đã chọn
+                    Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            enabled = !isUploading,
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) {
+                            Text(if (isUploading) "Đang tải..." else "Chọn ảnh", color = Color.White)
+                        }
+                        if (uploadError != null) {
+                            Text(uploadError!!, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Ảnh đã chọn",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .padding(top = 8.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
                                 var check = true
@@ -452,7 +514,7 @@ fun BlogManagementApp(
                                     check = false
                                 }
 
-                                if(title_blog.length < 150) {
+                                if(title_blog.length > 150) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 150 ký tự)"
                                     check = false
@@ -465,10 +527,32 @@ fun BlogManagementApp(
                                     check = false
                                 }
 
+                                if (imageUri == null) {
+                                    uploadError = "Vui lòng chọn và upload ảnh!"
+                                    check = false
+                                }
+
                                 if(check) {
+                                    isUploading = true
+                                    uploadError = null
                                     val tagId = selectedTag?.id ?: 0
-                                    viewModel.addBlog(title_blog, "1", "1", tagId, content)
-                                    showAddDialog = false
+                                    coroutineScope.launch {
+                                    val file = imageFileToUpload
+                                    if (file != null) {
+                                        val url = CloudinaryService.uploadImage(file)
+                                        if (url != null) {
+                                            imageUrl = url
+                                            imagePublicId = getPublicIdFromUrl(url)
+                                            viewModel.addBlog(title_blog, imagePublicId ?: "", imageUrl ?: "", tagId, content)
+                                            showAddDialog = false
+                                            isUploading = false
+                                        } else {
+                                            uploadError = "Upload ảnh thất bại!"
+                                            isUploading = false
+                                        }
+                                    }
+                                        isUploading = false
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -514,9 +598,19 @@ fun BlogManagementApp(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val  coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
-                                selected?.let { viewModel.deleteBlog(it) }
+                                selected?.let {
+                                    // thuc hien xoa anh tren cloudinary
+                                    val publicId = getPublicIdFromUrl(it.url_image ?: "")
+                                    if (publicId.isNotEmpty()) {
+                                        coroutineScope.launch {
+                                            CloudinaryService.deleteImage(publicId)
+                                        }
+                                    }
+                                    viewModel.deleteBlog(it)
+                                }
                                 showDeleteDialog = false
                             },
                             modifier = Modifier.weight(1f),
@@ -542,11 +636,42 @@ fun BlogManagementApp(
             )
         }
 
+        // Thêm state cho ảnh
+        var imageUri by remember { mutableStateOf<Uri?>(null) }
+        var imageUrl by remember { mutableStateOf<String?>(null) }
+        var imagePublicId by remember { mutableStateOf<String?>(null) }
+        var isUploading by remember { mutableStateOf(false) }
+        var uploadError by remember { mutableStateOf<String?>(null) }
+        var imageFileToUpload by remember { mutableStateOf<File?>(null) }
+
+        val context = LocalContext.current
+
+        val imagePickerLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+                uri: Uri? ->
+            imageUri = uri
+            uploadError = null
+            if (uri != null) {
+                val file = uriToFile(context, uri)
+                if (file != null) {
+                    imageFileToUpload = file // Đánh dấu file cần upload
+                } else {
+                    uploadError = "Không thể đọc file ảnh!"
+                    isUploading = false
+                }
+            }
+        }
+
+        LaunchedEffect(showUpdateDialog, selected) {
+            if (showUpdateDialog && selected?.url_image != null) {
+                imageUri = Uri.parse(selected?.url_image)
+            }
+        }
+
         LaunchedEffect(tagsList, selected) {
             selectedTag = tagsList.find { it.id == selected?.id_tag }
         }
 
-        Dialog(onDismissRequest = { showAddDialog = false }) {
+        Dialog(onDismissRequest = { showUpdateDialog = false }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -569,7 +694,7 @@ fun BlogManagementApp(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Cập nhập blog", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { showAddDialog = false }) {
+                        IconButton(onClick = { showUpdateDialog = false }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
@@ -642,11 +767,39 @@ fun BlogManagementApp(
                             }
                         }
                     }
+
+                    // Chọn ảnh & hiển thị ảnh đã chọn
+                    Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            enabled = !isUploading,
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) {
+                            Text(if (isUploading) "Đang tải..." else "Chọn ảnh", color = Color.White)
+                        }
+                        if (uploadError != null) {
+                            Text(uploadError!!, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Ảnh đã chọn",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .padding(top = 8.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
                                 var check = true
@@ -656,7 +809,7 @@ fun BlogManagementApp(
                                     check = false
                                 }
 
-                                if(title_blog.length < 150) {
+                                if(title_blog.length > 150) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 150 ký tự)"
                                     check = false
@@ -670,9 +823,31 @@ fun BlogManagementApp(
                                 }
 
                                 if(check) {
+                                    isUploading = true
+                                    uploadError = null
                                     val tagId = selectedTag?.id ?: 0
-                                    viewModel.updateBlog(selected?.id ?:0 ,title_blog, "1", "1", tagId, content,selected!!.created_at.toString())
-                                    showUpdateDialog = false
+                                    coroutineScope.launch {
+                                        val file = imageFileToUpload
+                                        if (file != null) {
+                                            val url = CloudinaryService.uploadImage(file)
+                                            if (url != null) {
+                                                imageUrl = url
+                                                imagePublicId = getPublicIdFromUrl(url)
+                                                // xử lý xóa ảnh cũ
+                                                if (selected?.url_image != null) {
+                                                    val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
+                                                    CloudinaryService.deleteImage(oldPublicId)
+                                                }
+                                                viewModel.updateBlog(selected?.id ?:0 ,title_blog, imagePublicId ?: "", imageUrl ?: "", tagId, content,selected!!.created_at.toString())
+                                                showUpdateDialog = false
+                                                isUploading = false
+                                            } else {
+                                                uploadError = "Upload ảnh thất bại!"
+                                                isUploading = false
+                                            }
+                                        }
+                                        isUploading = false
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -688,8 +863,7 @@ fun BlogManagementApp(
         }
     }
 }
-private fun isValidTitle(title: String): Boolean {
-    val trimmed = title.trim() // Loại bỏ khoảng trắng đầu và cuối
-    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$") // Chỉ cho phép chữ cái, số, khoảng trắng và ký tự tiếng Việt
-    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
-}
+
+
+
+

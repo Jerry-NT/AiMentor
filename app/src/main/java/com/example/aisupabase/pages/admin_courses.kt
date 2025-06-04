@@ -1,36 +1,5 @@
 package com.example.aisupabase.pages
 
-import android.util.Log
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.example.aisupabase.controllers.CourseRepository
-import com.example.aisupabase.controllers.CourseResult
-import com.example.aisupabase.controllers.authUser
-import com.example.aisupabase.config.SupabaseClientProvider
-import io.github.jan.supabase.SupabaseClient
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import androidx.compose.material3.Text
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -41,23 +10,57 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.aisupabase.R
+import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.controllers.CourseRepository
+import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.RoadMapRepository
 import com.example.aisupabase.controllers.RoadMapResult
+import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
-import courses
 import course_roadmaps
-
+import courses
+import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlin.Boolean
+import kotlin.IllegalArgumentException
+import kotlin.Int
+import kotlin.OptIn
+import kotlin.String
+import kotlin.Suppress
+import kotlin.Unit
+import kotlin.collections.List
+import kotlin.collections.emptyList
+import kotlin.collections.find
+import kotlin.collections.forEach
+import kotlin.let
+import com.example.aisupabase.config.handle.isValidTitle
 // ViewModel quản lý state courses
 class CoursesViewModel(private val repository: CourseRepository, private val roadmap_repository: RoadMapRepository) : ViewModel() {
     private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
@@ -174,10 +177,7 @@ fun Admin_Courses(navController: NavController) {
 // Composable giao diện quản lý courses
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CourseManagementApp(
-    supabase: SupabaseClient,
-    viewModel: CoursesViewModel = viewModel(factory = CoursesViewModelFactory(supabase))
-) {
+fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = viewModel(factory = CoursesViewModelFactory(supabase))) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val coursesList by viewModel.coursesList.collectAsState()
@@ -197,7 +197,7 @@ fun CourseManagementApp(
                         modifier = Modifier.padding(end = 16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Blue)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = "Thêm khóa học", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Thêm", color = Color.White)
                     }
@@ -440,7 +440,7 @@ fun CourseManagementApp(
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
-                                if(title_course.length < 150) {
+                                if(title_course.length > 150) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 150 ký tự)"
                                     check = false
@@ -451,7 +451,7 @@ fun CourseManagementApp(
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
-                                if(description.length < 500) {
+                                if(description.length > 500) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 500 ký tự)"
                                     check = false
@@ -542,7 +542,7 @@ fun CourseManagementApp(
         val context = LocalContext.current
         val session = authUser().getUserSession(context)
         val id = session["id"] as? Int ?: 0
-        Dialog(onDismissRequest = { showAddDialog = false }) {
+        Dialog(onDismissRequest = { showUpdateDialog = false }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -564,8 +564,8 @@ fun CourseManagementApp(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Thêm khóa học", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { showAddDialog = false }) {
+                        Text("Sửa khóa học", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showUpdateDialog = false }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
@@ -653,7 +653,7 @@ fun CourseManagementApp(
                                     check = false
                                 }
 
-                                if(title_course.length < 150) {
+                                if(title_course.length > 150) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 150 ký tự)"
                                     check = false
@@ -666,7 +666,7 @@ fun CourseManagementApp(
                                     check = false
                                 }
 
-                                if(description.length < 500) {
+                                if(description.length > 500) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 500 ký tự)"
                                     check = false
@@ -690,10 +690,4 @@ fun CourseManagementApp(
             }
         }
     }
-}
-
-private fun isValidTitle(title: String): Boolean {
-    val trimmed = title.trim() // Loại bỏ khoảng trắng đầu và cuối
-    val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$") // Chỉ cho phép chữ cái, số, khoảng trắng và ký tự tiếng Việt
-    return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
 }

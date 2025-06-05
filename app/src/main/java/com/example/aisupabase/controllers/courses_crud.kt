@@ -18,7 +18,6 @@ class CourseRepository(private val supabase: SupabaseClient) {
 
     suspend fun getCourses(): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
         try {
-
             val result = supabase.from("courses").select()
             val coursesList = result.decodeList<courses>()
             return@withContext CourseResult.Success(coursesList, result)

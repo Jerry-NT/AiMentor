@@ -82,6 +82,7 @@ package com.example.aisupabase.controllers
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -94,7 +95,7 @@ sealed class LessonResult<out T> {
 
 class LessonRepository(private val supabase: SupabaseClient) {
 
-    suspend fun getLessons(courseId: String): LessonResult<List<lessons>> = withContext(Dispatchers.IO) {
+    suspend fun getLessons(): LessonResult<List<lessons>> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.from("lessons").select()
             val lessonsList = result.decodeList<lessons>()
@@ -111,13 +112,10 @@ class LessonRepository(private val supabase: SupabaseClient) {
         duration: String
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val data = mapOf(
-                "id_course" to id_course,
-                "title_lesson" to title_lesson,
-                "content_lesson" to content_lesson,
-                "duration" to duration
-            )
-            val result = supabase.from("lessons").insert(data)
+            val result = supabase.postgrest["lessons"]
+                .insert(
+                    lessons(null, id_course, title_lesson, content_lesson, duration)
+                )
             return@withContext LessonResult.Success(Unit, result)
         } catch (e: Exception) {
             return@withContext LessonResult.Error(e)
@@ -132,13 +130,10 @@ class LessonRepository(private val supabase: SupabaseClient) {
         duration: String
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
-            val data = mapOf(
-                "id_course" to id_course,
-                "title_lesson" to title_lesson,
-                "content_lesson" to content_lesson,
-                "duration" to duration
-            )
-            val result = supabase.from("lessons").update(data) {
+            val result = supabase.postgrest["lessons"]
+                .update(
+                    lessons(id, id_course, title_lesson, content_lesson, duration)
+                ){
                 filter { eq("id", id) }
             }
             return@withContext LessonResult.Success(Unit, result)

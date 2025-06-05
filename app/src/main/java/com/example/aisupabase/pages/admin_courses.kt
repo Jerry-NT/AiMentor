@@ -637,10 +637,31 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
             selectedRoadmap = roadmaplist.find { it.id == selected?.id_roadmap }
         }
 
+        // Thêm state cho ảnh
+        var imageUri by remember { mutableStateOf<Uri?>(null) }
+        var imageUrl by remember { mutableStateOf<String?>(null) }
+        var imagePublicId by remember { mutableStateOf<String?>(null) }
+        var isUploading by remember { mutableStateOf(false) }
+        var uploadError by remember { mutableStateOf<String?>(null) }
+        var imageFileToUpload by remember { mutableStateOf<File?>(null) }
 
         val context = LocalContext.current
         val session = authUser().getUserSession(context)
         val id = session["id"] as? Int ?: 0
+        val imagePickerLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) {
+                uri: Uri? ->
+            imageUri = uri
+            uploadError = null
+            if (uri != null) {
+                val file = uriToFile(context, uri)
+                if (file != null) {
+                    imageFileToUpload = file // Đánh dấu file cần upload
+                } else {
+                    uploadError = "Không thể đọc file ảnh!"
+                    isUploading = false
+                }
+            }
+        }
         Dialog(onDismissRequest = { showUpdateDialog = false }) {
             Card(
                 modifier = Modifier
@@ -737,12 +758,38 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                             }
                         }
                     }
-                    // thiếu kiểm tra lộ trình ?
+
+                    Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            enabled = !isUploading,
+                            colors = ButtonDefaults.buttonColors(containerColor = Blue)
+                        ) {
+                            Text(if (isUploading) "Đang tải..." else "Chọn ảnh", color = Color.White)
+                        }
+                        if (uploadError != null) {
+                            Text(uploadError!!, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Ảnh đã chọn",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .padding(top = 8.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val coroutineScope = rememberCoroutineScope()
                         Button(
                             onClick = {
                                 var check = true
@@ -765,6 +812,34 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                     check = false
                                 }
 
+                                if(check) {
+                                    isUploading = true
+                                    uploadError = null
+                                    val tagId = selectedRoadmap?.id ?: 0
+                                    coroutineScope.launch {
+                                        val file = imageFileToUpload
+                                        if (file != null) {
+                                            val url = CloudinaryService.uploadImage(file)
+                                            if (url != null) {
+                                                imageUrl = url
+                                                imagePublicId = getPublicIdFromUrl(url)
+                                                // xử lý xóa ảnh cũ
+                                                if (selected?.url_image != null) {
+                                                    val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
+                                                    CloudinaryService.deleteImage(oldPublicId)
+                                                }
+                                                viewModel.updateCourse(selected?.id ?:0 ,title_course,description, imagePublicId ?: "", imageUrl ?: "", id, tagId)
+                                                showUpdateDialog = false
+                                                isUploading = false
+                                            } else {
+                                                uploadError = "Upload ảnh thất bại!"
+                                                isUploading = false
+                                            }
+                                        }
+                                        isUploading = false
+                                    }
+                                }
+
                                 if(description.length > 500) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 500 ký tự)"
@@ -773,13 +848,13 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
 
                                 if (check){
                                     val roadmapID = selectedRoadmap?.id ?: 0
-                                    viewModel.updateCourse(selected?.id ?: 0,title_course, description, "1", "1", id,roadmapID)
+                                    viewModel.updateCourse(selected?.id ?: 0,title_course, description,  imagePublicId ?: "", imageUrl ?: "", id,roadmapID)
                                     showUpdateDialog = false
                                 }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)
-                        ) { Text("Cập nhập", color = Color.White) }
+                        ) { Text("Cập nhật", color = Color.White) }
                         OutlinedButton(
                             onClick = { showUpdateDialog = false },
                             modifier = Modifier.weight(1f)

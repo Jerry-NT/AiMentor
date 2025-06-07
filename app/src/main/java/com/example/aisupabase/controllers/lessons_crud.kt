@@ -39,7 +39,7 @@ class LessonRepository(private val supabase: SupabaseClient) {
         id_course: Int,
         title_lesson: String,
         content_lesson: String,
-        duration: String
+        duration: Int
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["lessons"]
@@ -57,7 +57,7 @@ class LessonRepository(private val supabase: SupabaseClient) {
         id_course: Int,
         title_lesson: String,
         content_lesson: String,
-        duration: String
+        duration: Int
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["lessons"]

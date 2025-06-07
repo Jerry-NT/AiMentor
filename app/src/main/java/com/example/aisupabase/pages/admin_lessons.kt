@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -47,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -202,6 +204,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
     var showDeleteDialog by remember { mutableStateOf(false) }
 
 
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -354,7 +357,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                             }
                                             Spacer(modifier = Modifier.height(16.dp))
                                             Text(
-                                                text = "Thời gian: ${lesson.duration}",
+                                                text = "Thời gian: ${lesson.duration} phút ",
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 16.sp,
                                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -410,6 +413,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
         var errorContent by remember { mutableStateOf<String?>(null) }
         var errorDuration by remember { mutableStateOf<String?>(null) }
         var errorDes_short by remember { mutableStateOf<String?>(null) }
+
 
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
@@ -529,7 +533,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                             errorDuration = null
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập thời gian học") },
+                        placeholder = { Text("Nhập thời gian học (phút)") },
                         singleLine = true,
                         isError = errorDuration != null
                     )
@@ -552,6 +556,19 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                     check = false
                                 }
 
+                                if(!isValidTitle(content)) {
+                                    errorContent = "Nội dung không hợp lệ (không rỗng, không ký tự đặc biệt, không dư khoảng trắng)"
+                                    check = false
+                                }
+                                if(!isValidTitle(des_short)) {
+                                    errorDes_short = "Nội dung ví dụ không hợp lệ (không rỗng, không ký tự đặc biệt, không dư khoảng trắng)"
+                                    check = false
+                                }
+                                if (duration.isEmpty() || !duration.all { it.isDigit() } || duration.toInt() <= 0 || duration.toInt() >= 720) {
+                                    errorDuration = "Thời gian học không hợp lệ (phải là số nguyên dương và nhỏ hơn 720)"
+                                    check = false
+                                }
+
                                 if(check) {
                                     // tạo chuỗi json { } cho content_lesson
                                     val exampleObj = org.json.JSONObject()
@@ -570,7 +587,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                         id_course = selectedCourse?.id ?: 0,
                                         title_lesson = title,
                                         content_lesson = contentLessonObj.toString(),
-                                        duration = duration
+                                        duration = duration.toIntOrNull() ?: 0
                                     )
                                     viewModel.addLesson(newLesson)
                                     showAddDialog = false
@@ -727,15 +744,16 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
-                        value = duration,
+                        value = if (duration == 0) "" else duration.toString(),
                         onValueChange = {
-                            duration = it
+                            duration = it.toIntOrNull() ?: 0
                             errorDuration = null
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập thời gian học") },
+                        placeholder = { Text("Nhập thời gian học (phút)") },
                         singleLine = true,
-                        isError = errorDuration != null
+                        isError = errorDuration != null,
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                     )
                     if (errorDuration != null) {
                         Text(errorDuration!!, color = Color.Red, fontSize = 12.sp)
@@ -753,6 +771,19 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                 if (!isValidTitle(title)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
+                                }
+
+                                if(!isValidTitle(content)) {
+                                    errorContent = "Nội dung không hợp lệ (không rỗng, không ký tự đặc biệt, không dư khoảng trắng)"
+                                    check = false
+                                }
+                                if(!isValidTitle(des_short)) {
+                                    errorDes_short = "Nội dung ví dụ không hợp lệ (không rỗng, không ký tự đặc biệt, không dư khoảng trắng)"
+                                    check = false
+                                }
+                                if ( duration.toInt() <= 0 || duration.toInt() >= 720 || !duration.toString().all { it.isDigit() }) {
+                                    errorDuration = "Thời gian học không hợp lệ (phải là số nguyên dương và nhỏ hơn 720)"
                                     check = false
                                 }
 

@@ -100,6 +100,14 @@ class TagViewModel(private val repository: TagRepository) : ViewModel() {
             _isLoading.value = false
         }
     }
+
+    fun checkTagExists(title: String, case: String = "add", id: Int? = null, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkTagExists(title,case,id)
+            onResult(exists)
+        }
+    }
+
 }
 
 // ViewModel Factory sử dụng để tạo TagViewModel với SupabaseClient
@@ -323,13 +331,21 @@ fun TagManagementApp(supabase: SupabaseClient, viewModel: TagViewModel = viewMod
                                         }
                                         if (tagTitle.length > 150) {
                                             errorMsg =
-                                                "Tiêu đề tối đa 150 ký tự)"
+                                                "Tiêu đề tối đa 150 ký tự"
                                             check = false
 
                                         }
+
                                         if(check) {
+                                            viewModel.checkTagExists(tagTitle) { exists ->
+                                                if (exists) {
+                                                    errorMsg = "Tiêu đề đã tồn tại"
+                                                } else
+                                                {
                                             viewModel.addTag(tagTitle.trim())
                                             showAddDialog = false
+                                                }
+                                            }
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
@@ -411,11 +427,17 @@ fun TagManagementApp(supabase: SupabaseClient, viewModel: TagViewModel = viewMod
 
                                         }
                                         if(check) {
-                                            viewModel.updateTag(
-                                                selectedTag!!.id,
-                                                tagTitle.trim()
-                                            )
-                                            showUpdateDialog = false
+                                            viewModel.checkTagExists(tagTitle,"update",selectedTag?.id) { exists ->
+                                                if (exists) {
+                                                    errorMsg = "Tiêu đề đã tồn tại"
+                                                } else {
+                                                    viewModel.updateTag(
+                                                        selectedTag!!.id,
+                                                        tagTitle.trim()
+                                                    )
+                                                    showUpdateDialog = false
+                                                }
+                                            }
                                         }
                                     },
                                     modifier = Modifier.weight(1f),

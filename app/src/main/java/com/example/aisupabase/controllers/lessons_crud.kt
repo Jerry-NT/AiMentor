@@ -1,12 +1,4 @@
-//package com.example.aisupabase.controllers
-//
-//import lessons
-//import io.github.jan.supabase.SupabaseClient
-//import io.github.jan.supabase.postgrest.from
-//
-//sealed class LessonResult {
-//    data class Success(val data: List<lessons>?) : LessonResult()
-//    data class Error(val exception: Throwable) : LessonResult()
+
 
 package com.example.aisupabase.controllers
 
@@ -17,6 +9,7 @@ import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import lessons
+import user_lession
 
 sealed class LessonResult<out T> {
     data class Success<T>(val data: T?, val raw: PostgrestResult? = null) : LessonResult<T>()
@@ -39,7 +32,7 @@ class LessonRepository(private val supabase: SupabaseClient) {
         id_course: Int,
         title_lesson: String,
         content_lesson: String,
-        duration: String
+        duration: Int
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["lessons"]
@@ -57,7 +50,7 @@ class LessonRepository(private val supabase: SupabaseClient) {
         id_course: Int,
         title_lesson: String,
         content_lesson: String,
-        duration: String
+        duration: Int
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["lessons"]
@@ -74,6 +67,16 @@ class LessonRepository(private val supabase: SupabaseClient) {
 
     suspend fun deleteLesson(id: Int): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
+            // lay danh sach user _ lesson theo id lesson
+            val userLessons = supabase.from("user_lessons").select().decodeList<user_lession>()
+            userLessons.forEach { userLesson ->
+                // xoa user_lesson theo id lesson
+                if (userLesson.id_lession == id) {
+                    supabase.from("user_lessons").delete {
+                        filter { eq("id", userLesson.id?:0) }
+                    }
+                }
+            }
             val result = supabase.from("lessons").delete {
                 filter { eq("id", id) }
             }

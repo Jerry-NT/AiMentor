@@ -1,6 +1,7 @@
 package com.example.aisupabase.controllers
 
 import course_roadmaps
+import courses
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult
@@ -30,6 +31,18 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
     // Xóa theo id
     suspend fun deleteRoadMap(id: Int): RoadMapResult<Unit> = withContext(Dispatchers.IO) {
         try {
+            // xoa course
+           val courseList = supabase.postgrest["courses"]
+                .select {
+                    filter {
+                        eq("id_roadmap", id)
+                    }
+                }.decodeList<courses>()
+            courseList.forEach { course ->
+                CourseRepository(supabase).deleteCourse(course.id?:0)
+            }
+
+            // Xóa roadmap theo id
             val result = supabase.postgrest["course_roadmaps"]
                 .delete {
                     filter {

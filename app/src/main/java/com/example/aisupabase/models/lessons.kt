@@ -6,5 +6,5 @@ data class lessons(
     val id_course: Int,
     val title_lesson: String,
     val content_lesson: String,
-    val duration: String,
+    val duration: Int,
 )

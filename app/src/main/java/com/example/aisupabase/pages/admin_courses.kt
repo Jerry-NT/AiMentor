@@ -68,7 +68,6 @@ import kotlin.collections.forEach
 import kotlin.let
 import com.example.aisupabase.config.handle.isValidTitle
 import com.example.aisupabase.config.handle.uriToFile
-import kotlinx.coroutines.coroutineScope
 import java.io.File
 
 // ViewModel quản lý state courses
@@ -124,11 +123,11 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
         }
     }
 
-    fun updateCourse(id: Int, title: String, description: String, publicId: String, urlImage: String, userCreate: Int,id_roadmap:Int) {
+    fun updateCourse(id: Int, title: String, description: String, publicId: String, urlImage: String, userCreate: Int,id_roadmap:Int,created_at:String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, userCreate,id_roadmap)) {
+            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, userCreate,id_roadmap,created_at)) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
@@ -828,7 +827,7 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                                     val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
                                                     CloudinaryService.deleteImage(oldPublicId)
                                                 }
-                                                viewModel.updateCourse(selected?.id ?:0 ,title_course,description, imagePublicId ?: "", imageUrl ?: "", id, tagId)
+                                                viewModel.updateCourse(selected?.id ?:0 ,title_course,description, imagePublicId ?: "", imageUrl ?: "", id, tagId,selected?.created_at ?: "")
                                                 showUpdateDialog = false
                                                 isUploading = false
                                             } else {
@@ -848,7 +847,7 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
 
                                 if (check){
                                     val roadmapID = selectedRoadmap?.id ?: 0
-                                    viewModel.updateCourse(selected?.id ?: 0,title_course, description,  imagePublicId ?: "", imageUrl ?: "", id,roadmapID)
+                                    viewModel.updateCourse(selected?.id ?: 0,title_course, description,  imagePublicId ?: "", imageUrl ?: "", id,roadmapID,selected?.created_at ?: "")
                                     showUpdateDialog = false
                                 }
                             },

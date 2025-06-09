@@ -13,7 +13,9 @@ public class authUser{
         id: Int?,
         indexImage: Int,
         role: String,
-        typeAccount: String
+        typeAccount: String,
+        phone:String,
+        id_type_account:Int
     ) {
         val sharedPref = context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
         with(sharedPref.edit()) {
@@ -23,6 +25,8 @@ public class authUser{
             putInt("index_image", indexImage)
             putString("role", role)
             putString("type_account", typeAccount)
+            putString("phone", phone)
+            putInt("id_type_account", id_type_account)
             apply()
         }
     }
@@ -35,7 +39,9 @@ public class authUser{
             "id" to if (sharedPref.contains("id")) sharedPref.getInt("id", -1) else null,
             "index_image" to if (sharedPref.contains("index_image")) sharedPref.getInt("index_image", -1) else null,
             "role" to sharedPref.getString("role", null),
-            "type_account" to sharedPref.getString("type_account", null)
+            "type_account" to sharedPref.getString("type_account", null),
+            "phone" to sharedPref.getString("phone", null),
+            "id_type_account" to sharedPref.getInt("id_type_acount",0)
         )
     }
 

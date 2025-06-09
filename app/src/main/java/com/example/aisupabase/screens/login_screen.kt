@@ -361,7 +361,9 @@ suspend fun login(
             id = user.id,
             indexImage = user.index_image,
             role = user.role.toString(),
-            typeAccount = typeUser.type
+            typeAccount = typeUser.type,
+            phone = user.phone,
+            id_type_account = user.id_type_account
         )
 
         Log.d("Login", "User session saved successfully")

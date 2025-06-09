@@ -2,6 +2,21 @@ package com.example.aisupabase.config
 
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.aisupabase.models.Tags
+import com.example.aisupabase.models.type_accounts
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.postgrest
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
@@ -61,5 +76,29 @@ object handle {
         } catch (e: Exception) {
             dateString // fallback if parsing fails
         }
+    }
+
+    @Composable
+    fun TagName(supabase: SupabaseClient, id: Int) {
+        var typeAccount by remember { mutableStateOf<Tags?>(null) }
+
+        LaunchedEffect(id) {
+            typeAccount = getTagName(supabase, id)
+        }
+
+        Text(
+            text = "${typeAccount?.title_tag ?: "Unknown"}",
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+
+    suspend fun getTagName(supabase: SupabaseClient, id: Int): Tags? {
+        val typeList = supabase.postgrest["tags"]
+            .select {
+                filter { eq("id", id) }
+            }
+            .decodeList<Tags>()
+        return typeList.firstOrNull()
     }
 }

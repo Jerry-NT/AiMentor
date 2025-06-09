@@ -18,11 +18,24 @@ sealed class CourseResult<out T> {
 
 class CourseRepository(private val supabase: SupabaseClient) {
 
+    // Lấy danh sách khóa học
     suspend fun getCourses(): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.from("courses").select()
             val coursesList = result.decodeList<courses>()
             return@withContext CourseResult.Success(coursesList, result)
+        } catch (e: Exception) {
+            return@withContext CourseResult.Error(e)
+        }
+    }
+
+    // lay ra 4 khóa học mới nhất
+    suspend fun getLatestCourses(): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.from("courses").select()
+            val coursesList = result.decodeList<courses>().sortedByDescending { it.created_at }
+            val latestCourses = coursesList.take(4)
+            return@withContext CourseResult.Success(latestCourses, result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
         }
@@ -55,13 +68,14 @@ class CourseRepository(private val supabase: SupabaseClient) {
         public_id_image: String,
         url_image: String,
         user_create: Int,
-        id_roadmap: Int
+        id_roadmap: Int,
+        created_at:String
 
     ): CourseResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["courses"]
                 .update(
-                    courses(id, title_course, des_course, public_id_image, url_image, is_private = false, id_roadmap, user_create, now().toString())
+                    courses(id, title_course, des_course, public_id_image, url_image, is_private = false, id_roadmap, user_create, created_at)
                 ){
                     filter { eq("id", id) }
                 }
@@ -111,4 +125,18 @@ class CourseRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    // ham tim kiem theo tieu de va noi dung
+    suspend fun searchCourse(query: String): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.from("courses").select()
+            val coursesList = result.decodeList<courses>()
+                .filter {
+                    it.title_course.contains(query, ignoreCase = true) ||
+                            it.des_course.contains(query, ignoreCase = true)
+                }
+            return@withContext CourseResult.Success(coursesList, result)
+        } catch (e: Exception) {
+            return@withContext CourseResult.Error(e)
+        }
+    }
 }

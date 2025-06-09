@@ -1,0 +1,186 @@
+package com.example.aisupabase.pages
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.aisupabase.R
+import com.example.aisupabase.components.bottombar.BottomNavigationBar
+import com.example.aisupabase.components.card_components.PopularCourseItem
+import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.controllers.CourseRepository
+import com.example.aisupabase.controllers.CourseResult
+import com.example.aisupabase.controllers.authUser
+import courses
+import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlin.collections.get
+
+class courseViewModel(private val courseRespository: CourseRepository):ViewModel()
+{
+    private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
+    val courseList: StateFlow<List<courses>> = _coursesList
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
+    init {
+        fetchCourse()
+    }
+    private fun fetchCourse() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = courseRespository.getCourses()) {
+                is CourseResult.Success -> _coursesList.value = result.data ?: emptyList()
+                is CourseResult.Error -> _error.value = result.exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+}
+
+// view factory
+class courseViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(courseViewModel::class.java)) {
+            return courseViewModel(CourseRepository(supabase)) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+@Composable
+fun Client_Course(navController: NavController) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        val session = authUser().getUserSession(context)
+        val role = session["role"] as? String
+        val username = session["username"] as? String
+        if (username == null || role != "client") {
+            authUser().clearUserSession(context)
+            navController.navigate("login");
+        }
+    }
+
+    val supabase = SupabaseClientProvider.client
+    CourseHomeView(navController,supabase)
+}
+
+// CRUD view
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CourseHomeView(
+    navController: NavController,
+    supabase: SupabaseClient,
+    viewModel: courseViewModel = viewModel(factory = courseViewModelFactory(supabase))
+)
+{
+    val Listcourses by viewModel.courseList.collectAsState()
+    // thông tin user
+    val context = LocalContext.current
+    val session = authUser().getUserSession(context)
+
+    // bottom bar setup
+    val routeToIndex = mapOf(
+        "client_home" to 0,
+        "client_course" to 1,
+        "client_search" to 2,
+        "client_blog" to 3,
+        "client_profile" to 4
+    )
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
+
+    LaunchedEffect(currentRoute) {
+        selectedIndex = routeToIndex[currentRoute] ?: 0
+    }
+
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                selectedIndex = selectedIndex,
+                onItemSelected = { index -> selectedIndex = index },
+                navController
+            )
+        }
+    ){ paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.background),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.5f
+            )
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp))
+            {
+                item {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Danh sách khóa hoc",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Listcourses.forEach { course ->
+                                PopularCourseItem(course = course)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

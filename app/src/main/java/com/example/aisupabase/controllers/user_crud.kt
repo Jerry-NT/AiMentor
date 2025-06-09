@@ -1,5 +1,7 @@
+import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.models.Users
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult
 import kotlinx.coroutines.Dispatchers
@@ -23,4 +25,17 @@ sealed class UserResult<out T> {
             return@withContext UserResult.Error(e)
         }
     }
-}
+
+    suspend fun updateUser(user:Users):UserResult<Unit> = withContext(Dispatchers.IO)
+    {
+        try {
+            val result = supabase.from("users").update(user) {
+                filter { eq("id", user.id?:0) }
+            }
+            return@withContext UserResult.Success(Unit, result)
+        }catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext UserResult.Error(e)
+        }
+    }
+ }

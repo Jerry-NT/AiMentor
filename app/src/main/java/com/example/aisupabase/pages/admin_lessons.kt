@@ -152,6 +152,13 @@ class AdminLessonsViewModel(private val repository: LessonRepository, private va
             _isLoading.value = false
         }
     }
+
+    fun checkLessonExists(title_lesson: String,case: String = "add", id: Int? = null,onResult: (Boolean)-> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkLessonExists(title_lesson,case,id)
+            onResult(exists)
+        }
+    }
 }
 
 // view factory
@@ -557,6 +564,25 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
+                                if (check) {
+                                    val normalizedTitle = title.trim().lowercase()
+                                    viewModel.checkLessonExists(normalizedTitle, "update", selected?.id) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Tiêu đề bài học đã tồn tại"
+                                        } else {
+                                            viewModel.addLesson(
+                                                lessons(
+                                                    selected?.id,
+                                                    id_course = selectedCourse?.id ?: 0,
+                                                    title_lesson = title.trim(),
+                                                    content_lesson = "",
+                                                    duration = duration.toIntOrNull() ?: 0
+                                                )
+                                            )
+                                            showAddDialog = false
+                                        }
+                                    }
+                                }
 
                                 if(!isValidTitle(content)) {
                                     errorContent = "Nội dung không hợp lệ (không rỗng, không ký tự đặc biệt, không dư khoảng trắng)"
@@ -571,29 +597,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                     check = false
                                 }
 
-                                if(check) {
-                                    // tạo chuỗi json { } cho content_lesson
-                                    val exampleObj = org.json.JSONObject()
-                                    exampleObj.put("des_short", des_short)
-                                    if(code != "") {
-                                        exampleObj.put("code", code)
-                                    }
-                                    // Create the main content_lesson object
-                                    val contentLessonObj = org.json.JSONObject()
-                                    contentLessonObj.put("content_lession", content)
-                                    contentLessonObj.put("example", exampleObj)
 
-                                    // Add the new lesson
-                                    val newLesson = lessons(
-                                        null,
-                                        id_course = selectedCourse?.id ?: 0,
-                                        title_lesson = title,
-                                        content_lesson = contentLessonObj.toString(),
-                                        duration = duration.toIntOrNull() ?: 0
-                                    )
-                                    viewModel.addLesson(newLesson)
-                                    showAddDialog = false
-                                }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)
@@ -790,6 +794,36 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                 if ( duration.toInt() <= 0 || duration.toInt() >= 720 || !duration.toString().all { it.isDigit() }) {
                                     errorDuration = "Thời gian học không hợp lệ (phải là số nguyên dương và nhỏ hơn 720)"
                                     check = false
+                                }
+                                if(check) {
+                                    viewModel.checkLessonExists(title_lesson = title, "update", selected?.id) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Tiêu đề bài học đã tồn tại"
+                                        }
+                                        else{
+                                            // tạo chuỗi json { } cho content_lesson
+                                            val exampleObj = org.json.JSONObject()
+                                            exampleObj.put("des_short", des_short)
+                                            if(code.isNotEmpty()) {
+                                                exampleObj.put("code", code)
+                                            }
+                                            // Create the main content_lesson object
+                                            val contentLessonObj = org.json.JSONObject()
+                                            contentLessonObj.put("content_lession", content)
+                                            contentLessonObj.put("example", exampleObj)
+
+                                            // Update the lesson
+                                            val updatedLesson = lessons(
+                                                selected!!.id,
+                                                id_course = selectedCourse?.id ?: 0,
+                                                title_lesson = title,
+                                                content_lesson = contentLessonObj.toString(),
+                                                duration = duration.toInt() ?: 0
+                                            )
+                                            viewModel.updateLesson(updatedLesson)
+                                            showUpdateDialog = false
+                                        }
+                                    }
                                 }
 
                                 if(check) {

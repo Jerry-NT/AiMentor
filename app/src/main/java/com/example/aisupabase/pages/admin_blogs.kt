@@ -143,6 +143,13 @@ class BlogsViewModel(private val repository: BlogRepository, private val tag_rep
             _isLoading.value = false
         }
     }
+
+    fun checkBlogsExists(title_blog: String, case: String = "add", id: Int? = null, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkBlogsExists(title_blog,case,id)
+            onResult(exists)
+        }
+    }
 }
 
 //  Main Activity for Admin Blogs Page
@@ -156,7 +163,7 @@ fun Admin_Blogs( navController: NavController) {
         val username = session["username"] as? String
         if (username == null || role != "admin") {
             authUser().clearUserSession(context)
-            navController.navigate("login");
+            navController.navigate("login")
         }
     }
 
@@ -530,6 +537,25 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
 
                                 }
 
+                                if(check) {
+                                    viewModel.checkBlogsExists(title_blog,"update",selectedTag?.id) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Tiêu đề đã tồn tại"
+                                        } else {
+                                            viewModel.addBlog(
+                                                title_blog.trim(),
+                                                imagePublicId ?: "",
+                                                imageUrl ?: "",
+                                                selectedTag?.id ?: 0,
+                                                content.trim()
+                                            )
+                                            showAddDialog = false
+                                        }
+                                    }
+                                }
+
+
+
                                 if (!isValidTitle(content)) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
@@ -834,6 +860,25 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
+                                }
+
+                                if(check) {
+                                    viewModel.checkBlogsExists(title_blog,"update",selectedTag?.id) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Tiêu đề đã tồn tại"
+                                        } else {
+                                            viewModel.updateBlog(
+                                                selected?.id ?: 0,
+                                                title_blog.trim(),
+                                                imagePublicId ?: "",
+                                                imageUrl ?: "",
+                                                selectedTag?.id ?: 0,
+                                                content.trim(),
+                                                selected!!.created_at.toString()
+                                            )
+                                            showUpdateDialog = false
+                                        }
+                                    }
                                 }
 
                                 if(check) {

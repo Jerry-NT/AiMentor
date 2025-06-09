@@ -103,4 +103,27 @@ class BlogRepository(private val supabase: SupabaseClient) {
             return@withContext BlogResult.Error(e)
         }
     }
+
+    suspend fun checkBlogsExists(title_blog: String, case: String = "add", id: Int? = null): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val existingBlog = supabase.postgrest["blogs"]
+                .select {
+                    filter {
+                        ilike("title_blog", title_blog)
+                    }
+                }.decodeList<blogs>()
+
+            return@withContext when (case) {
+                "update" -> {
+                    existingBlog.any { it.id != id }
+                }
+                else -> {
+                    existingBlog.isNotEmpty()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext false
+        }
+    }
 }

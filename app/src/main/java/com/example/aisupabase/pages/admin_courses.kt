@@ -151,6 +151,13 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
             _isLoading.value = false
         }
     }
+
+    fun checkCoursesExists(title_blog: String, case: String = "add", id: Int? = null,onResult: (Boolean)-> Unit) {
+        viewModelScope.launch {
+           val exists = repository.checkCourseExist(title_blog, case, id)
+            onResult(exists)
+        }
+    }
 }
 
 // ViewModel Factory cho CoursesViewModel
@@ -518,6 +525,27 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                     check = false
 
                                 }
+
+                                if (check) {
+                                    val normalizedTitle = title_course.trim().lowercase()
+                                    viewModel.checkCoursesExists(normalizedTitle, "update") { exists ->
+                                        if (exists) {
+                                            errorMsg = "Khóa học đã tồn tại"
+                                        } else {
+                                            viewModel.addCourse(
+                                                title_course.trim(),
+                                                description,
+                                                imagePublicId ?: "",
+                                                imageUrl ?: "",
+                                                false,
+                                                id,
+                                                selectedRoadmap?.id ?: 0
+                                            )
+                                            showAddDialog = false
+                                        }
+                                    }
+                                }
+
                                 if (!isValidTitle(description)) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
@@ -812,6 +840,27 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                     check = false
                                 }
 
+                                if (check) {
+                                    val normalizedTitle = title_course.trim().lowercase()
+                                    viewModel.checkCoursesExists(normalizedTitle, "update", selected?.id ?: 0) {
+                                        exists ->
+                                            if (exists) {
+                                                errorMsg = "Khóa học đã tồn tại"
+                                            } else {
+                                                viewModel.updateCourse(
+                                                    selected?.id ?: 0,
+                                                    title_course.trim(),
+                                                    description,
+                                                    imagePublicId ?: "",
+                                                    imageUrl ?: "",
+                                                    id,
+                                                    selectedRoadmap?.id ?: 0
+                                                )
+                                                showUpdateDialog = false
+                                            }
+                                    }
+                                }
+
                                 if(check) {
                                     isUploading = true
                                     uploadError = null
@@ -828,7 +877,13 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                                     val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
                                                     CloudinaryService.deleteImage(oldPublicId)
                                                 }
-                                                viewModel.updateCourse(selected?.id ?:0 ,title_course,description, imagePublicId ?: "", imageUrl ?: "", id, tagId)
+                                                viewModel.updateCourse(
+                                                    selected?.id ?:0 ,
+                                                    title_course,description,
+                                                    imagePublicId ?: "",
+                                                    imageUrl ?: "",
+                                                    id,
+                                                    tagId)
                                                 showUpdateDialog = false
                                                 isUploading = false
                                             } else {

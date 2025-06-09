@@ -85,4 +85,26 @@ class LessonRepository(private val supabase: SupabaseClient) {
             return@withContext LessonResult.Error(e)
         }
     }
+
+    suspend fun checkLessonExists(title_lesson: String, case: String = "update", id: Int? = null):Boolean = withContext(Dispatchers.IO) {
+        try {
+            val existingLesson = supabase.postgrest["lessons"]
+                .select {
+                    filter {
+                        ilike("title_lesscon", title_lesson) }
+            }.decodeList<lessons>()
+
+            return@withContext when (case) {
+                "update" -> {
+                    existingLesson.any { it.id != id}
+                }
+                else -> {
+                    existingLesson.isNotEmpty()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext false
+        }
+    }
 }

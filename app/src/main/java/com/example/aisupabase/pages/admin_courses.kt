@@ -124,11 +124,11 @@ class CoursesViewModel(private val repository: CourseRepository, private val roa
         }
     }
 
-    fun updateCourse(id: Int, title: String, description: String, publicId: String, urlImage: String, userCreate: Int,id_roadmap:Int) {
+    fun updateCourse(id: Int, title: String, description: String, publicId: String, urlImage: String, userCreate: Int,id_roadmap:Int,created_at:String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, userCreate,id_roadmap)) {
+            when (val result = repository.updateCourse(id, title, description, publicId, urlImage, userCreate,id_roadmap,created_at)) {
                 is CourseResult.Success -> getCourses()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
@@ -514,36 +514,17 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                         Button(
                             onClick = {
                                 var check = true
+
                                 if (!isValidTitle(title_course)) {
                                     errorMsg =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
+
                                 if(title_course.length > 150) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 150 ký tự)"
                                     check = false
-
-                                }
-
-                                if (check) {
-                                    val normalizedTitle = title_course.trim().lowercase()
-                                    viewModel.checkCoursesExists(normalizedTitle, "update") { exists ->
-                                        if (exists) {
-                                            errorMsg = "Khóa học đã tồn tại"
-                                        } else {
-                                            viewModel.addCourse(
-                                                title_course.trim(),
-                                                description,
-                                                imagePublicId ?: "",
-                                                imageUrl ?: "",
-                                                false,
-                                                id,
-                                                selectedRoadmap?.id ?: 0
-                                            )
-                                            showAddDialog = false
-                                        }
-                                    }
                                 }
 
                                 if (!isValidTitle(description)) {
@@ -551,6 +532,7 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                         "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
+
                                 if(description.length > 500) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 500 ký tự)"
@@ -568,25 +550,35 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                 }
 
                                 if(check) {
-                                    isUploading = true
-                                    uploadError = null
-                                    val roadmapID = selectedRoadmap?.id ?: 0
-                                    coroutineScope.launch {
-                                        val file = imageFileToUpload
-                                        if (file != null) {
-                                            val url = CloudinaryService.uploadImage(file)
-                                            if (url != null) {
-                                                imageUrl = url
-                                                imagePublicId = getPublicIdFromUrl(url)
-                                                viewModel.addCourse(title_course, description, imagePublicId ?: "", imageUrl ?: "",false, id, roadmapID)
-                                                showAddDialog = false
-                                                isUploading = false
-                                            } else {
-                                                uploadError = "Upload ảnh thất bại!"
+                                    viewModel.checkCoursesExists(title_course) { exists ->
+                                        if(exists)
+                                        {
+                                            errorMsg = "Tiêu đề đã tồn tại"
+                                            check=false
+                                        }
+                                        else
+                                        {
+                                            isUploading = true
+                                            uploadError = null
+                                            val roadmapID = selectedRoadmap?.id ?: 0
+                                            coroutineScope.launch {
+                                                val file = imageFileToUpload
+                                                if (file != null) {
+                                                    val url = CloudinaryService.uploadImage(file)
+                                                    if (url != null) {
+                                                        imageUrl = url
+                                                        imagePublicId = getPublicIdFromUrl(url)
+                                                        viewModel.addCourse(title_course, description, imagePublicId ?: "", imageUrl ?: "",false, id, roadmapID)
+                                                        showAddDialog = false
+                                                        isUploading = false
+                                                    } else {
+                                                        uploadError = "Upload ảnh thất bại!"
+                                                        isUploading = false
+                                                    }
+                                                }
                                                 isUploading = false
                                             }
                                         }
-                                        isUploading = false
                                     }
                                 }
                             },
@@ -688,6 +680,12 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                     uploadError = "Không thể đọc file ảnh!"
                     isUploading = false
                 }
+            }
+        }
+
+        LaunchedEffect(showUpdateDialog, selected) {
+            if (showUpdateDialog && selected?.url_image != null) {
+                imageUri = Uri.parse(selected?.url_image)
             }
         }
         Dialog(onDismissRequest = { showUpdateDialog = false }) {
@@ -840,71 +838,71 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                                     check = false
                                 }
 
-                                if (check) {
-                                    val normalizedTitle = title_course.trim().lowercase()
-                                    viewModel.checkCoursesExists(normalizedTitle, "update", selected?.id ?: 0) {
-                                        exists ->
-                                            if (exists) {
-                                                errorMsg = "Khóa học đã tồn tại"
-                                            } else {
-                                                viewModel.updateCourse(
-                                                    selected?.id ?: 0,
-                                                    title_course.trim(),
-                                                    description,
-                                                    imagePublicId ?: "",
-                                                    imageUrl ?: "",
-                                                    id,
-                                                    selectedRoadmap?.id ?: 0
-                                                )
-                                                showUpdateDialog = false
-                                            }
-                                    }
-                                }
-
-                                if(check) {
-                                    isUploading = true
-                                    uploadError = null
-                                    val tagId = selectedRoadmap?.id ?: 0
-                                    coroutineScope.launch {
-                                        val file = imageFileToUpload
-                                        if (file != null) {
-                                            val url = CloudinaryService.uploadImage(file)
-                                            if (url != null) {
-                                                imageUrl = url
-                                                imagePublicId = getPublicIdFromUrl(url)
-                                                // xử lý xóa ảnh cũ
-                                                if (selected?.url_image != null) {
-                                                    val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
-                                                    CloudinaryService.deleteImage(oldPublicId)
-                                                }
-                                                viewModel.updateCourse(
-                                                    selected?.id ?:0 ,
-                                                    title_course,description,
-                                                    imagePublicId ?: "",
-                                                    imageUrl ?: "",
-                                                    id,
-                                                    tagId)
-                                                showUpdateDialog = false
-                                                isUploading = false
-                                            } else {
-                                                uploadError = "Upload ảnh thất bại!"
-                                                isUploading = false
-                                            }
-                                        }
-                                        isUploading = false
-                                    }
-                                }
-
                                 if(description.length > 500) {
                                     errorcontentMsg =
                                         "Nội dung không hợp lệ (tối đa 500 ký tự)"
                                     check = false
                                 }
 
-                                if (check){
-                                    val roadmapID = selectedRoadmap?.id ?: 0
-                                    viewModel.updateCourse(selected?.id ?: 0,title_course, description,  imagePublicId ?: "", imageUrl ?: "", id,roadmapID)
-                                    showUpdateDialog = false
+                                if(check) {
+                                    viewModel.checkCoursesExists(title_course,"update",selected?.id ?:0 ) { exists ->
+                                        if(exists)
+                                        {
+                                            errorMsg = "Tiêu đề đã tồn tại"
+                                            check = false
+                                        }
+                                        else
+                                        {
+                                            isUploading = true
+                                            uploadError = null
+                                            val tagId = selectedRoadmap?.id ?: 0
+                                            coroutineScope.launch {
+                                                val file = imageFileToUpload
+                                                if (file != null) {
+                                                    val url = CloudinaryService.uploadImage(file)
+                                                    if (url != null) {
+                                                        imageUrl = url
+                                                        imagePublicId = getPublicIdFromUrl(url)
+                                                        // xử lý xóa ảnh cũ
+                                                        if (selected?.url_image != null) {
+                                                            val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
+                                                            CloudinaryService.deleteImage(oldPublicId)
+                                                        }
+                                                        viewModel.updateCourse(
+                                                            selected?.id ?:0 ,
+                                                            title_course,description,
+                                                            imagePublicId ?: "",
+                                                            imageUrl ?: "",
+                                                            id,
+                                                            tagId,
+                                                            selected?.created_at.toString()
+                                                        )
+
+                                                        showUpdateDialog = false
+                                                        isUploading = false
+                                                    } else {
+                                                        uploadError = "Upload ảnh thất bại!"
+                                                        isUploading = false
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    viewModel.updateCourse(
+                                                        selected?.id ?:0 ,
+                                                        title_course,description,
+                                                        selected?.public_id_image ?: "",
+                                                        selected?.url_image ?: "",
+                                                        id,
+                                                        tagId,
+                                                        selected?.created_at.toString()
+                                                    )
+                                                    showUpdateDialog = false
+                                                }
+                                                isUploading = false
+                                            }
+                                        }
+                                    }
+
                                 }
                             },
                             modifier = Modifier.weight(1f),

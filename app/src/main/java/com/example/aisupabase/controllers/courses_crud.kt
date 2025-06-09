@@ -139,4 +139,27 @@ class CourseRepository(private val supabase: SupabaseClient) {
             return@withContext CourseResult.Error(e)
         }
     }
+
+    suspend fun checkCourseExist(title_course: String, case: String = "update", id: Int? = null): Boolean = withContext(Dispatchers.IO){
+        try {
+            val existingCourse = supabase.postgrest["courses"]
+                .select {
+                    filter {
+                        ilike("title_course", title_course)
+                    }
+                }.decodeList<courses>()
+
+            return@withContext when (case) {
+                "update" -> {
+                    existingCourse.any { it.id != id }
+                }
+                else -> {
+                    existingCourse.isNotEmpty()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext false
+        }
+    }
 }

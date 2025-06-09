@@ -71,4 +71,27 @@ class questionRepositon(private val supabase: SupabaseClient) {
             return@withContext QuestionResult.Error(e)
         }
     }
+
+    suspend fun checkQuestionExist(title: String, case: String = "update", id: Int? = null): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val existingQuestion = supabase.postgrest["questions"]
+                .select {
+                    filter {
+                    ilike("title", title)
+                    }
+                }.decodeList<questions>()
+
+            return@withContext when (case) {
+                "update" -> {
+                    existingQuestion.any  {it.id != id }
+                }
+                else -> {
+                    existingQuestion.isNotEmpty()
+                }
+            }
+        } catch (e: Exception) {
+                e.printStackTrace()
+                return@withContext false
+        }
+    }
 }

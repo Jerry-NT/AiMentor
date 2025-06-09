@@ -796,11 +796,13 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                     check = false
                                 }
                                 if(check) {
-                                    viewModel.checkLessonExists(title_lesson = title, "update", selected?.id) { exists ->
+                                    viewModel.checkLessonExists(title, "update", selected?.id) { exists ->
                                         if (exists) {
                                             errorMsg = "Tiêu đề bài học đã tồn tại"
+                                            check = false
                                         }
-                                        else{
+                                        else
+                                        {
                                             // tạo chuỗi json { } cho content_lesson
                                             val exampleObj = org.json.JSONObject()
                                             exampleObj.put("des_short", des_short)
@@ -820,35 +822,11 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                                 content_lesson = contentLessonObj.toString(),
                                                 duration = duration.toInt() ?: 0
                                             )
-                                            viewModel.updateLesson(updatedLesson)
                                             showUpdateDialog = false
                                         }
                                     }
                                 }
 
-                                if(check) {
-                                    // tạo chuỗi json { } cho content_lesson
-                                    val exampleObj = org.json.JSONObject()
-                                    exampleObj.put("des_short", des_short)
-                                    if(code != "") {
-                                        exampleObj.put("code", code)
-                                    }
-                                    // Create the main content_lesson object
-                                    val contentLessonObj = org.json.JSONObject()
-                                    contentLessonObj.put("content_lession", content)
-                                    contentLessonObj.put("example", exampleObj)
-
-                                    // Add the new lesson
-                                    val newLesson = lessons(
-                                        selected!!.id,
-                                        id_course = selectedCourse?.id ?: 0,
-                                        title_lesson = title,
-                                        content_lesson = contentLessonObj.toString(),
-                                        duration = duration
-                                    )
-                                    viewModel.updateLesson(newLesson)
-                                    showUpdateDialog = false
-                                }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)

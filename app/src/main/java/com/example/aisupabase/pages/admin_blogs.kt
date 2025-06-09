@@ -542,19 +542,34 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                         if (exists) {
                                             errorMsg = "Tiêu đề đã tồn tại"
                                         } else {
-                                            viewModel.addBlog(
-                                                title_blog.trim(),
-                                                imagePublicId ?: "",
-                                                imageUrl ?: "",
-                                                selectedTag?.id ?: 0,
-                                                content.trim()
-                                            )
-                                            showAddDialog = false
+                                            isUploading = true
+                                            uploadError = null
+                                            val tagId = selectedTag?.id ?: 0
+                                            coroutineScope.launch {
+                                                val file = imageFileToUpload
+                                                if (file != null) {
+                                                    val url = CloudinaryService.uploadImage(file)
+                                                    if (url != null) {
+                                                        imageUrl = url
+                                                        imagePublicId = getPublicIdFromUrl(url)
+                                                        viewModel.addBlog(title_blog,
+                                                            imagePublicId ?: "",
+                                                            imageUrl ?: "",
+                                                            tagId,
+                                                            content)
+                                                        showAddDialog = false
+                                                        isUploading = false
+                                                    }
+                                                    else {
+                                                        uploadError = "Upload ảnh thất bại!"
+                                                        isUploading = false
+                                                    }
+                                                }
+                                                isUploading = false
+                                            }
                                         }
                                     }
                                 }
-
-
 
                                 if (!isValidTitle(content)) {
                                     errorcontentMsg =
@@ -572,28 +587,6 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                     check = false
                                 }
 
-                                if(check) {
-                                    isUploading = true
-                                    uploadError = null
-                                    val tagId = selectedTag?.id ?: 0
-                                    coroutineScope.launch {
-                                    val file = imageFileToUpload
-                                    if (file != null) {
-                                        val url = CloudinaryService.uploadImage(file)
-                                        if (url != null) {
-                                            imageUrl = url
-                                            imagePublicId = getPublicIdFromUrl(url)
-                                            viewModel.addBlog(title_blog, imagePublicId ?: "", imageUrl ?: "", tagId, content)
-                                            showAddDialog = false
-                                            isUploading = false
-                                        } else {
-                                            uploadError = "Upload ảnh thất bại!"
-                                            isUploading = false
-                                        }
-                                    }
-                                        isUploading = false
-                                    }
-                                }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)
@@ -866,47 +859,54 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                     viewModel.checkBlogsExists(title_blog,"update",selectedTag?.id) { exists ->
                                         if (exists) {
                                             errorMsg = "Tiêu đề đã tồn tại"
-                                        } else {
-                                            viewModel.updateBlog(
-                                                selected?.id ?: 0,
-                                                title_blog.trim(),
-                                                imagePublicId ?: "",
-                                                imageUrl ?: "",
-                                                selectedTag?.id ?: 0,
-                                                content.trim(),
-                                                selected!!.created_at.toString()
-                                            )
-                                            showUpdateDialog = false
+                                            check = false
                                         }
+                                        else
+                                            {
+                                                isUploading = true
+                                                uploadError = null
+                                                val tagId = selectedTag?.id ?: 0
+                                                coroutineScope.launch {
+                                                    val file = imageFileToUpload
+                                                    if (file != null) {
+                                                        val url = CloudinaryService.uploadImage(file)
+                                                        if (url != null) {
+                                                            imageUrl = url
+                                                            imagePublicId = getPublicIdFromUrl(url)
+                                                            if (selected?.url_image != null) {
+                                                                val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
+                                                                CloudinaryService.deleteImage(oldPublicId)
+                                                            }
+                                                            viewModel.updateBlog(selected?.id ?:0 ,title_blog, imagePublicId ?: "", imageUrl ?: "", tagId, content,selected!!.created_at.toString())
+                                                            showUpdateDialog = false
+                                                            isUploading = false
+                                                        } else {
+                                                            uploadError = "Upload ảnh thất bại!"
+                                                            isUploading = false
+                                                        }
+                                                    }
+                                                    else {
+                                                        isUploading = false
+                                                        viewModel.updateBlog(
+                                                            selected?.id ?: 0,
+                                                            title_blog.trim(),
+                                                            imagePublicId ?: "",
+                                                            imageUrl ?: "",
+                                                            selectedTag?.id ?: 0,
+                                                            content.trim(),
+                                                            selected!!.created_at.toString()
+                                                        )
+                                                        showUpdateDialog = false
+                                                    }
+                                                    isUploading = false
+                                                }
+                                            }
                                     }
                                 }
 
                                 if(check) {
-                                    isUploading = true
-                                    uploadError = null
-                                    val tagId = selectedTag?.id ?: 0
-                                    coroutineScope.launch {
-                                        val file = imageFileToUpload
-                                        if (file != null) {
-                                            val url = CloudinaryService.uploadImage(file)
-                                            if (url != null) {
-                                                imageUrl = url
-                                                imagePublicId = getPublicIdFromUrl(url)
-                                                // xử lý xóa ảnh cũ
-                                                if (selected?.url_image != null) {
-                                                    val oldPublicId = getPublicIdFromUrl(selected!!.url_image)
-                                                    CloudinaryService.deleteImage(oldPublicId)
-                                                }
-                                                viewModel.updateBlog(selected?.id ?:0 ,title_blog, imagePublicId ?: "", imageUrl ?: "", tagId, content,selected!!.created_at.toString())
-                                                showUpdateDialog = false
-                                                isUploading = false
-                                            } else {
-                                                uploadError = "Upload ảnh thất bại!"
-                                                isUploading = false
-                                            }
-                                        }
-                                        isUploading = false
-                                    }
+
+
                                 }
                             },
                             modifier = Modifier.weight(1f),

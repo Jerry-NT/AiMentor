@@ -85,6 +85,28 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
             return@withContext RoadMapResult.Error(e)
         }
     }
+
+    suspend fun checkRoadMapExists(title: String,case: String = "update", id: Int? = null):Boolean = withContext(Dispatchers.IO) {
+        try {
+            val existingRoadMap = supabase.postgrest["course_roadmaps"]
+                .select {
+                    filter {
+                        ilike("title", title)
+                    }
+                }.decodeList<course_roadmaps>()
+            return@withContext when (case) {
+                "update" -> {
+                    existingRoadMap.any { it.id != id }
+                }
+                else -> {
+                    existingRoadMap.isNotEmpty()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext false
+        }
+    }
 }
 
 

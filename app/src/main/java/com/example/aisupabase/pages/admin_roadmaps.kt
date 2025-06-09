@@ -126,6 +126,12 @@ class RoadMapViewModel (private val repository: RoadMapRepository): ViewModel(){
             _isLoading.value = false
         }
     }
+
+    fun checkRoadMapExists(title: String,case:String = "add",id:Int? = null,onResult: (Boolean)-> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkRoadMapExists(title, case, id)
+        }
+    }
 }
 
 // viewnodel factory
@@ -359,8 +365,15 @@ fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel =
                                     check = false
                                 }
                                 if (check) {
-                                    viewModel.addRoadMap(roadmapTitle.trim())
-                                    showAddDialog = false
+                                    viewModel.checkRoadMapExists(roadmapTitle) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Lộ trình đã tồn tại"
+                                            check = false
+                                        } else {
+                                            viewModel.addRoadMap(roadmapTitle.trim())
+                                            showAddDialog = false
+                                        }
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -441,11 +454,17 @@ fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel =
                                     check = false
                                 }
                                 if (check) {
-                                    viewModel.updateRoadMap(
-                                        selectedRoadMap!!.id ?: 0,
-                                        roadmapTitle.trim()
-                                    )
-                                    showUpdateDialog = false
+                                    viewModel.checkRoadMapExists(roadmapTitle,"update",selectedRoadMap!!.id) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Lộ trình đã tồn tại"
+                                            check = false
+                                        } else {
+                                            viewModel.updateRoadMap(
+                                                selectedRoadMap!!.id ?: 0,
+                                                roadmapTitle.trim())
+                                            showAddDialog = false
+                                        }
+                                    }
                                 }
                             },
                             modifier = Modifier.weight(1f),

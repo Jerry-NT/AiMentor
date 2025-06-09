@@ -148,6 +148,14 @@ class questionViewModel(private val repository: questionRepositon): ViewModel(){
             _loading.value = false
         }
     }
+
+    fun checkQuestionExists(title: String, case: String = "add", id: Int? = null, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkQuestionExist(title, case, id)
+            onResult(exists)
+        }
+    }
+
 }
 
 // viewmodel factory
@@ -328,6 +336,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
         }
     }
 
+    // Add Question Dialog
     if (showAddDialog) {
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
@@ -518,22 +527,33 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                                     hasError = true
                                 }
                                 if (!hasError) {
-                                    if (selectedTypeOption == question_option_type.abcd) {
-                                        val options = org.json.JSONObject()
-                                        options.put("A", answerA)
-                                        options.put("B", answerB)
-                                        options.put("C", answerC)
-                                        options.put("D", answerD)
-                                        viewModel.addQuestion(
-                                            title,
-                                            options.toString(),
-                                            selectedTypeOption
-                                        )
-                                    } else {
-                                        viewModel.addQuestion(title, "", selectedTypeOption)
+                                    viewModel.checkQuestionExists(title) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Câu hỏi đã tồn tại"
+                                            hasError = false
+                                        } else {
+                                            if (selectedTypeOption == question_option_type.abcd) {
+                                                val options = org.json.JSONObject()
+                                                options.put("A", answerA)
+                                                options.put("B", answerB)
+                                                options.put("C", answerC)
+                                                options.put("D", answerD)
+                                                viewModel.addQuestion(
+                                                    title,
+                                                    options.toString(),
+                                                    selectedTypeOption
+                                                )
+                                            }
+                                            else {
+                                                viewModel.addQuestion(
+                                                    title,
+                                                    "",
+                                                    selectedTypeOption
+                                                )
+                                            }
+                                            showAddDialog = false
+                                        }
                                     }
-
-                                    showAddDialog = false
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -758,23 +778,38 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                                     hasError = true
                                 }
                                 if (!hasError) {
-                                    if (selectedTypeOption == question_option_type.abcd) {
-                                        val options = org.json.JSONObject()
-                                        options.put("A", answerA)
-                                        options.put("B", answerB)
-                                        options.put("C", answerC)
-                                        options.put("D", answerD)
-                                        viewModel.updateQuestion(
-                                            selected!!.id ?: 0,
-                                            title,
-                                            options.toString(),
-                                            selectedTypeOption
-                                        )
-                                    } else {
-                                        viewModel.updateQuestion(selected!!.id ?: 0,title, "", selectedTypeOption)
+                                    viewModel.checkQuestionExists(
+                                        title,
+                                        "update",
+                                        selected!!.id
+                                    ) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Câu hỏi đã tồn tại"
+                                            hasError = false
+                                        } else {
+                                            if (selectedTypeOption == question_option_type.abcd) {
+                                                val options = org.json.JSONObject()
+                                                options.put("A", answerA)
+                                                options.put("B", answerB)
+                                                options.put("C", answerC)
+                                                options.put("D", answerD)
+                                                viewModel.updateQuestion(
+                                                    selected!!.id ?: 0,
+                                                    title,
+                                                    options.toString(),
+                                                    selectedTypeOption
+                                                )
+                                            } else {
+                                                viewModel.updateQuestion(
+                                                    selected!!.id ?: 0,
+                                                    title,
+                                                    "",
+                                                    selectedTypeOption
+                                                )
+                                            }
+                                            showUpdateDialog = false
+                                        }
                                     }
-
-                                    showUpdateDialog = false
                                 }
                             },
                             modifier = Modifier.weight(1f),

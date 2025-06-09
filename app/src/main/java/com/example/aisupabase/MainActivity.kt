@@ -14,11 +14,11 @@ import com.example.aisupabase.pages.Admin_Roadmaps
 import com.example.aisupabase.pages.Admin_Tag_Blogs
 import com.example.aisupabase.pages.Admin_Type_Accounts
 import com.example.aisupabase.pages.Admin_User_Invoids
-import com.example.aisupabase.pages.Admin_Users
 import com.example.aisupabase.pages.Client_Blog
 import com.example.aisupabase.pages.Client_Course
 import com.example.aisupabase.pages.Client_Search
 import com.example.aisupabase.pages.Client_User
+import com.example.aisupabase.pages.admin_users.Admin_Users
 import com.example.aisupabase.screens.AdminHomeScreen
 import com.example.aisupabase.screens.ClientHomeScreen
 import com.example.aisupabase.screens.LoginScreen

@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin_users
 
 import UserRepository
 import UserResult

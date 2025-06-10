@@ -6,10 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -129,6 +133,10 @@ fun BlogHomeView(
     val currentRoute = navBackStackEntry?.destination?.route
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
 
+    // dropdown loc blog - moi nhat - cu nhat theo created_at
+    var expanded by remember { mutableStateOf(false) }
+    val filterOptions = listOf("Mới nhất", "Cũ nhất")
+    var selectedFilter by remember { mutableStateOf(filterOptions[0]) }
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
     }
@@ -174,8 +182,36 @@ fun BlogHomeView(
                             )
                         }
 
+                        Spacer(modifier = Modifier.height(16.dp))
+                        // Dropdown filter
+                        Box {
+                            TextButton(onClick = { expanded = true }) {
+                                Text(selectedFilter)
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                filterOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option) },
+                                        onClick = {
+                                            selectedFilter = option
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Listblogs.forEach { blog ->
+                            val blogToShow = when (selectedFilter) {
+                                "Mới nhất" -> Listblogs.sortedByDescending { it.created_at }
+                                "Cũ nhất" -> Listblogs.sortedBy { it.created_at }
+                                else -> Listblogs
+                            }
+
+                            blogToShow.forEach { blog ->
                                 BlogPostItem(blog)
                             }
                         }

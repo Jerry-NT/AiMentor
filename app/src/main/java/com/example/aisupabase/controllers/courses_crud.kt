@@ -21,7 +21,12 @@ class CourseRepository(private val supabase: SupabaseClient) {
     // Lấy danh sách khóa học
     suspend fun getCourses(): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
         try {
-            val result = supabase.from("courses").select()
+            val result = supabase.from("courses").select{
+                filter {
+                    // is_private = false
+                    eq("is_private", false)
+                }
+            }
             val coursesList = result.decodeList<courses>()
             return@withContext CourseResult.Success(coursesList, result)
         } catch (e: Exception) {
@@ -32,7 +37,12 @@ class CourseRepository(private val supabase: SupabaseClient) {
     // lay ra 4 khóa học mới nhất
     suspend fun getLatestCourses(): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
         try {
-            val result = supabase.from("courses").select()
+            val result = supabase.from("courses").select{
+                filter {
+                    // is_private = false
+                    eq("is_private", false)
+                }
+            }
             val coursesList = result.decodeList<courses>().sortedByDescending { it.created_at }
             val latestCourses = coursesList.take(4)
             return@withContext CourseResult.Success(latestCourses, result)
@@ -128,11 +138,15 @@ class CourseRepository(private val supabase: SupabaseClient) {
     // ham tim kiem theo tieu de va noi dung
     suspend fun searchCourse(query: String): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
         try {
-            val result = supabase.from("courses").select()
+            val result = supabase.from("courses").select{
+                filter {
+                    // is_private = false
+                    eq("is_private", false)
+                }
+            }
             val coursesList = result.decodeList<courses>()
                 .filter {
-                    it.title_course.contains(query, ignoreCase = true) ||
-                            it.des_course.contains(query, ignoreCase = true)
+                    it.title_course.contains(query, ignoreCase = true) || it.des_course.contains(query, ignoreCase = true)
                 }
             return@withContext CourseResult.Success(coursesList, result)
         } catch (e: Exception) {
@@ -146,6 +160,7 @@ class CourseRepository(private val supabase: SupabaseClient) {
                 .select {
                     filter {
                         ilike("title_course", title_course)
+                        eq("is_private", false)
                     }
                 }.decodeList<courses>()
 

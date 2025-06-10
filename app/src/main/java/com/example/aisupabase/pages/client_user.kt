@@ -138,7 +138,7 @@ data class SettingsItem(
 fun UserHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: userViewModel = viewModel(factory = userViewModelFactory (supabase)
+    viewModel: userViewModel = viewModel(factory = userViewModelFactory(supabase)
 ))
     {
         val context = LocalContext.current

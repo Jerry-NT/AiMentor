@@ -170,6 +170,4 @@ object card_components {
             }
         }
     }
-
-
 }

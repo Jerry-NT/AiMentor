@@ -6,15 +6,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -130,6 +137,15 @@ fun CourseHomeView(
     val currentRoute = navBackStackEntry?.destination?.route
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
 
+    // chon lay tab -> cong khai va ca nhan
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabTitles = listOf("Công khai", "Cá nhân")
+
+    // dropdown loc course - moi nhat - cu nhat theo created_at
+    var expanded by remember { mutableStateOf(false) }
+    val filterOptions = listOf("Mới nhất", "Cũ nhất")
+    var selectedFilter by remember { mutableStateOf(filterOptions[0]) }
+
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
     }
@@ -166,15 +182,58 @@ fun CourseHomeView(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                "Danh sách khóa hoc",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
+                            // tab chon cong khai hay ca nhan
+                            TabRow(selectedTabIndex = selectedTabIndex) {
+                                tabTitles.forEachIndexed { index, title ->
+                                    Tab(
+                                        selected = selectedTabIndex == index,
+                                        onClick = { selectedTabIndex = index },
+                                        text = { Text(title) }
+                                    )
+                                }
+                            }
+
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        // Dropdown filter
+                        Box {
+                            TextButton(onClick = { expanded = true }) {
+                                Text(selectedFilter)
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                filterOptions.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option) },
+                                        onClick = {
+                                            selectedFilter = option
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Listcourses.forEach { course ->
+                            // xu ly lay listcourse can render
+                            val filteredCourses = if (selectedTabIndex == 0) {
+                                Listcourses
+                            } else {
+                                Listcourses
+                            }
+                            // filter
+                            val coursesToShow = when (selectedFilter) {
+                                "Mới nhất" -> filteredCourses.sortedByDescending { it.created_at }
+                                "Cũ nhất" -> filteredCourses.sortedBy { it.created_at }
+                                else -> filteredCourses
+                            }
+
+                            // hien thi ket qua
+                            coursesToShow.forEach { course ->
                                 PopularCourseItem(course = course)
                             }
                         }
@@ -183,4 +242,3 @@ fun CourseHomeView(
             }
         }
     }
-}

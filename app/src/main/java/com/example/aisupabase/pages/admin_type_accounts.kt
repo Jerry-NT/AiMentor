@@ -138,8 +138,14 @@ class TypeAccountsViewModel (private val repository: TypeAccountRepository):View
             _isLoading.value = false
         }
     }
-}
 
+    fun checkTypeExists(type: String, case: String = "add", id: Int? = null, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkTypeAccount(type,case,id)
+            onResult(exists)
+        }
+    }
+}
 
 // ViewModel Factory
 class TypeAccountsViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
@@ -444,7 +450,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                         "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     hasError = true
                                 }
-                                if(typeAccount.length<150){
+                                if(typeAccount.length>150){
                                     errorMsg = "Loại tài khoản không được quá 150 ký tự"
                                     hasError = true
                                 }
@@ -453,7 +459,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                         "Mô tả không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     hasError = true
                                 }
-                                if (desAccount.length < 150) {
+                                if (desAccount.length > 150) {
                                     erroDesMsg = "Mô tả không được quá 150 ký tự"
                                     hasError = true
                                 }
@@ -468,8 +474,16 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                     hasError = true
                                 }
                                 if (!hasError) {
-                                    viewModel.addTypeAccount(typeAccount, desAccount, maxCourse!!, price!!)
-                                    showAddDialog = false
+                                    viewModel.checkTypeExists(typeAccount) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Loại tai khoan đã tồn tại"
+                                        } else
+                                        {
+                                            viewModel.addTypeAccount(typeAccount, desAccount, maxCourse!!, price!!)
+                                            showAddDialog = false
+                                        }
+                                    }
+
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -597,7 +611,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                     errorMsg = "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     hasError = true
                                 }
-                                if (typeAccount.length < 150) {
+                                if (typeAccount.length > 150) {
                                     errorMsg = "Loại tài khoản không được quá 150 ký tự"
                                     hasError = true
                                 }
@@ -605,7 +619,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                     erroDesMsg = "Mô tả không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     hasError = true
                                 }
-                                if (desAccount.length < 150) {
+                                if (desAccount.length > 150) {
                                     erroDesMsg = "Mô tả không được quá 150 ký tự"
                                     hasError = true
                                 }
@@ -620,14 +634,21 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                     hasError = true
                                 }
                                 if (!hasError) {
-                                    viewModel.updateTypeAccount(
-                                        selected!!,
-                                        typeAccount,
-                                        desAccount,
-                                        maxCourse!!,
-                                        price!!
-                                    )
-                                    showUpdateDialog = false
+                                    viewModel.checkTypeExists(typeAccount,"update",selected?.id) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Tiêu đề đã tồn tại"
+                                        } else{
+                                            viewModel.updateTypeAccount(
+                                                selected!!,
+                                                typeAccount,
+                                                desAccount,
+                                                maxCourse!!,
+                                                price!!
+                                            )
+                                            showUpdateDialog = false
+                                        }
+                                    }
+
                                 }
                             },
                             modifier = Modifier.weight(1f),

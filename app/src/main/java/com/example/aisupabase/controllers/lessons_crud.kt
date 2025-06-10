@@ -68,11 +68,11 @@ class LessonRepository(private val supabase: SupabaseClient) {
     suspend fun deleteLesson(id: Int): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             // lay danh sach user _ lesson theo id lesson
-            val userLessons = supabase.from("user_lessons").select().decodeList<user_lession>()
+            val userLessons = supabase.from("user_lesson").select().decodeList<user_lession>()
             userLessons.forEach { userLesson ->
                 // xoa user_lesson theo id lesson
                 if (userLesson.id_lession == id) {
-                    supabase.from("user_lessons").delete {
+                    supabase.from("user_lesson").delete {
                         filter { eq("id", userLesson.id?:0) }
                     }
                 }
@@ -86,12 +86,15 @@ class LessonRepository(private val supabase: SupabaseClient) {
         }
     }
 
-    suspend fun checkLessonExists(title_lesson: String, case: String = "update", id: Int? = null):Boolean = withContext(Dispatchers.IO) {
+// chi tinh tren course
+    suspend fun checkLessonExists(title_lesson: String, case: String = "update", id: Int? = null,id_course: Int):Boolean = withContext(Dispatchers.IO) {
         try {
             val existingLesson = supabase.postgrest["lessons"]
                 .select {
                     filter {
-                        ilike("title_lesscon", title_lesson) }
+                        ilike("title_lesson", title_lesson)
+                        eq("id_course",id_course)
+                    }
             }.decodeList<lessons>()
 
             return@withContext when (case) {

@@ -96,6 +96,7 @@ class BlogsViewModel(private val repository: BlogRepository, private val tag_rep
             _isLoading.value = false
         }
     }
+
     fun getBlogs() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -537,8 +538,24 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
 
                                 }
 
+                                if (!isValidTitle(content)) {
+                                    errorcontentMsg =
+                                        "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
+                                }
+
+                                if (imageUri == null) {
+                                    uploadError = "Vui lòng chọn và upload ảnh!"
+                                    check = false
+                                }
+
+                                if (selectedTag == null) {
+                                    errortagMsg = "Vui lòng chọn loại blog!"
+                                    check = false
+                                }
+
                                 if(check) {
-                                    viewModel.checkBlogsExists(title_blog,"update",selectedTag?.id) { exists ->
+                                    viewModel.checkBlogsExists(title_blog) { exists ->
                                         if (exists) {
                                             errorMsg = "Tiêu đề đã tồn tại"
                                         } else {
@@ -571,21 +588,7 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                     }
                                 }
 
-                                if (!isValidTitle(content)) {
-                                    errorcontentMsg =
-                                        "Nội dung không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    check = false
-                                }
 
-                                if (imageUri == null) {
-                                    uploadError = "Vui lòng chọn và upload ảnh!"
-                                    check = false
-                                }
-
-                                if (selectedTag == null) {
-                                    errortagMsg = "Vui lòng chọn loại blog!"
-                                    check = false
-                                }
 
                             },
                             modifier = Modifier.weight(1f),
@@ -856,7 +859,7 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                 }
 
                                 if(check) {
-                                    viewModel.checkBlogsExists(title_blog,"update",selectedTag?.id) { exists ->
+                                    viewModel.checkBlogsExists(title_blog,"update",selected?.id) { exists ->
                                         if (exists) {
                                             errorMsg = "Tiêu đề đã tồn tại"
                                             check = false
@@ -904,10 +907,6 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
                                     }
                                 }
 
-                                if(check) {
-
-
-                                }
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Blue)

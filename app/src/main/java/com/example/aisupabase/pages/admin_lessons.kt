@@ -141,6 +141,7 @@ class AdminLessonsViewModel(private val repository: LessonRepository, private va
             _isLoading.value = false
         }
     }
+
     fun updateLesson(lesson: lessons) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -153,9 +154,9 @@ class AdminLessonsViewModel(private val repository: LessonRepository, private va
         }
     }
 
-    fun checkLessonExists(title_lesson: String,case: String = "add", id: Int? = null,onResult: (Boolean)-> Unit) {
+    fun checkLessonExists(title_lesson: String,case: String = "add", id: Int? = null,id_course:Int,onResult: (Boolean)-> Unit) {
         viewModelScope.launch {
-            val exists = repository.checkLessonExists(title_lesson,case,id)
+            val exists = repository.checkLessonExists(title_lesson,case,id,id_course)
             onResult(exists)
         }
     }
@@ -190,7 +191,6 @@ fun Admin_Lessons( navController: NavController) {
     LessionManagermentApp(supabase)
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewModel = viewModel(factory = AdminLessonsViewModelFactory(supabase)))
@@ -209,7 +209,6 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
     var showAddDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-
 
 
     Scaffold(
@@ -564,25 +563,6 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
-                                if (check) {
-                                    val normalizedTitle = title.trim().lowercase()
-                                    viewModel.checkLessonExists(normalizedTitle, "update", selected?.id) { exists ->
-                                        if (exists) {
-                                            errorMsg = "Tiêu đề bài học đã tồn tại"
-                                        } else {
-                                            viewModel.addLesson(
-                                                lessons(
-                                                    selected?.id,
-                                                    id_course = selectedCourse?.id ?: 0,
-                                                    title_lesson = title.trim(),
-                                                    content_lesson = "",
-                                                    duration = duration.toIntOrNull() ?: 0
-                                                )
-                                            )
-                                            showAddDialog = false
-                                        }
-                                    }
-                                }
 
                                 if(!isValidTitle(content)) {
                                     errorContent = "Nội dung không hợp lệ (không rỗng, không ký tự đặc biệt, không dư khoảng trắng)"
@@ -597,6 +577,35 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                     check = false
                                 }
 
+                                if (check) {
+                                    viewModel.checkLessonExists(title,"add",null,selectedCourse?.id?:0) { exists ->
+                                        if (exists) {
+                                            errorMsg = "Tiêu đề bài học đã tồn tại"
+                                        } else {
+                                            // tạo chuỗi json { } cho content_lessonAdd commentMore actions
+                                            val exampleObj = org.json.JSONObject()
+                                            exampleObj.put("des_short", des_short)
+                                            if(code != "") {
+                                                exampleObj.put("code", code)
+                                            }
+                                            // Create the main content_lesson object
+                                            val contentLessonObj = org.json.JSONObject()
+                                            contentLessonObj.put("content_lession", content)
+                                            contentLessonObj.put("example", exampleObj)
+
+                                            viewModel.addLesson(
+                                                lessons(
+                                                    selected?.id,
+                                                    id_course = selectedCourse?.id ?: 0,
+                                                    title_lesson = title.trim(),
+                                                    content_lesson = contentLessonObj.toString(),
+                                                    duration = duration.toIntOrNull() ?: 0
+                                                )
+                                            )
+                                            showAddDialog = false
+                                        }
+                                    }
+                                }
 
                             },
                             modifier = Modifier.weight(1f),
@@ -611,7 +620,6 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
             }
         }
     }
-
 
     // Update Dialog
     if (showUpdateDialog && selected != null) {
@@ -796,11 +804,12 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                     check = false
                                 }
                                 if(check) {
-                                    viewModel.checkLessonExists(title, "update", selected?.id) { exists ->
+                                    viewModel.checkLessonExists(title, "update", selected?.id,selectedCourse?.id?:0) { exists ->
                                         if (exists) {
                                             errorMsg = "Tiêu đề bài học đã tồn tại"
                                             check = false
                                         }
+
                                         else
                                         {
                                             // tạo chuỗi json { } cho content_lesson
@@ -820,8 +829,9 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                                 id_course = selectedCourse?.id ?: 0,
                                                 title_lesson = title,
                                                 content_lesson = contentLessonObj.toString(),
-                                                duration = duration.toInt() ?: 0
+                                                duration = duration.toInt()
                                             )
+                                            viewModel.updateLesson(updatedLesson)
                                             showUpdateDialog = false
                                         }
                                     }
@@ -840,6 +850,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
             }
         }
     }
+
     // Delete Dialog
     if (showDeleteDialog && selected != null) {
         Dialog(onDismissRequest = { showDeleteDialog = false }) {

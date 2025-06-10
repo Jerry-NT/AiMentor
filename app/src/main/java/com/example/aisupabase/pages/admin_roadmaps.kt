@@ -130,6 +130,7 @@ class RoadMapViewModel (private val repository: RoadMapRepository): ViewModel(){
     fun checkRoadMapExists(title: String,case:String = "add",id:Int? = null,onResult: (Boolean)-> Unit) {
         viewModelScope.launch {
             val exists = repository.checkRoadMapExists(title, case, id)
+            onResult(exists)
         }
     }
 }
@@ -359,11 +360,13 @@ fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel =
                                         "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
                                     check = false
                                 }
+
                                 if(roadmapTitle.length > 150)
                                 {
                                     errorMsg = "Tiêu đề không được quá 150 ký tự"
                                     check = false
                                 }
+
                                 if (check) {
                                     viewModel.checkRoadMapExists(roadmapTitle) { exists ->
                                         if (exists) {

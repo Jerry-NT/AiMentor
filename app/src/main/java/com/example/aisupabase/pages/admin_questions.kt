@@ -69,6 +69,7 @@ import com.example.aisupabase.R
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
 import com.example.aisupabase.config.handle.isValidTitle
+import com.example.aisupabase.models.type_accounts
 
 //viewmodels
 class questionViewModel(private val repository: questionRepositon): ViewModel(){
@@ -149,9 +150,9 @@ class questionViewModel(private val repository: questionRepositon): ViewModel(){
         }
     }
 
-    fun checkQuestionExists(title: String, case: String = "add", id: Int? = null, onResult: (Boolean) -> Unit) {
+    fun checkQuestionExists(title: String, case: String = "add", id: Int? = null,type_option: question_option_type,onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val exists = repository.checkQuestionExist(title, case, id)
+            val exists = repository.checkQuestionExist(title, case, id,type_option)
             onResult(exists)
         }
     }
@@ -353,8 +354,6 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                 var errorMsg by remember { mutableStateOf<String?>(null) }
                 var errorAMsg by remember { mutableStateOf<String?>(null) }
                 var errorBMsg by remember { mutableStateOf<String?>(null) }
-                var errorCMsg by remember { mutableStateOf<String?>(null) }
-                var errorDMsg by remember { mutableStateOf<String?>(null) }
 
                 var expanded by remember { mutableStateOf(false) }
                 var selectedTypeOption by remember { mutableStateOf(question_option_type.input) }
@@ -455,21 +454,16 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                             onValueChange = { answerC = it },
                             label = { Text("Nhập đáp án C") },
                             modifier = Modifier.fillMaxWidth(),
-                            isError = errorCMsg != null
+
                         )
-                        if (errorCMsg != null) {
-                            Text(errorCMsg!!, color = Color.Red, fontSize = 12.sp)
-                        }
+
                         OutlinedTextField(
                             value = answerD,
                             onValueChange = { answerD = it },
                             label = { Text("Nhập đáp án D") },
                             modifier = Modifier.fillMaxWidth(),
-                            isError = errorDMsg != null
+
                         )
-                        if (errorDMsg != null) {
-                            Text(errorDMsg!!, color = Color.Red, fontSize = 12.sp)
-                        }
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -477,60 +471,46 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                     ) {
                         Button(
                             onClick = {
-                                var hasError = false
+                                var check = true
                                 if (!isValidTitle(title)) {
                                     errorMsg =
                                         "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                    check = false
                                 }
 
                                 if (title.length > 150) {
                                     errorMsg = "Loại tài khoản không được quá 150 ký tự"
-                                    hasError = true
+                                    check = false
                                 }
 
-                                if (!isValidTitle(answerA)) {
+                                if (!isValidTitle(answerA) && selectedTypeOption == question_option_type.abcd ) {
                                     errorAMsg =
                                         "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (answerA.length > 150) {
-                                    errorAMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
+                                    check = false
                                 }
 
-                                if (!isValidTitle(answerB)) {
+                                if (answerA.length > 150 && selectedTypeOption == question_option_type.abcd) {
+                                    errorAMsg = "Câu hỏi không được quá 150 ký tự"
+                                    check = false
+                                }
+
+                                if (!isValidTitle(answerB) && selectedTypeOption == question_option_type.abcd) {
                                     errorBMsg =
                                         "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                    check = false
                                 }
-                                if (answerB.length > 150) {
+
+                                if (answerB.length > 150 && selectedTypeOption == question_option_type.abcd) {
                                     errorBMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
+                                    check = false
                                 }
-                                if (!isValidTitle(answerC)) {
-                                    errorCMsg =
-                                        "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (answerC.length > 150) {
-                                    errorCMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
-                                }
-                                if (!isValidTitle(answerD)) {
-                                    errorDMsg =
-                                        "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (answerD.length > 150) {
-                                    errorDMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
-                                }
-                                if (!hasError) {
-                                    viewModel.checkQuestionExists(title) { exists ->
+
+
+                                if (check) {
+                                    viewModel.checkQuestionExists(title,"add",null,type_option = selectedTypeOption) { exists ->
                                         if (exists) {
                                             errorMsg = "Câu hỏi đã tồn tại"
-                                            hasError = false
+                                            check = false
                                         } else {
                                             if (selectedTypeOption == question_option_type.abcd) {
                                                 val options = org.json.JSONObject()
@@ -554,6 +534,8 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                                             showAddDialog = false
                                         }
                                     }
+
+
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -604,8 +586,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                 var errorMsg by remember { mutableStateOf<String?>(null) }
                 var errorAMsg by remember { mutableStateOf<String?>(null) }
                 var errorBMsg by remember { mutableStateOf<String?>(null) }
-                var errorCMsg by remember { mutableStateOf<String?>(null) }
-                var errorDMsg by remember { mutableStateOf<String?>(null) }
+
 
                 var expanded by remember { mutableStateOf(false) }
                 var selectedTypeOption by remember { mutableStateOf(selected!!.type_option) }
@@ -706,21 +687,17 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                             onValueChange = { answerC = it },
                             label = { Text("Nhập đáp án C") },
                             modifier = Modifier.fillMaxWidth(),
-                            isError = errorCMsg != null
+
                         )
-                        if (errorCMsg != null) {
-                            Text(errorCMsg!!, color = Color.Red, fontSize = 12.sp)
-                        }
+
                         OutlinedTextField(
                             value = answerD,
                             onValueChange = { answerD = it },
                             label = { Text("Nhập đáp án D") },
                             modifier = Modifier.fillMaxWidth(),
-                            isError = errorDMsg != null
+
                         )
-                        if (errorDMsg != null) {
-                            Text(errorDMsg!!, color = Color.Red, fontSize = 12.sp)
-                        }
+
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -728,61 +705,40 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                     ) {
                         Button(
                             onClick = {
-                                var hasError = false
+                                var hasError = true
                                 if (!isValidTitle(title)) {
                                     errorMsg =
                                         "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                    hasError = false
                                 }
 
                                 if (title.length > 150) {
                                     errorMsg = "Loại tài khoản không được quá 150 ký tự"
-                                    hasError = true
+                                    hasError = false
                                 }
 
-                                if (!isValidTitle(answerA)) {
+                                if (!isValidTitle(answerA) && selectedTypeOption == question_option_type.abcd) {
                                     errorAMsg =
                                         "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                    hasError = false
                                 }
-                                if (answerA.length > 150) {
+                                if (answerA.length > 150 && selectedTypeOption == question_option_type.abcd) {
                                     errorAMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
+                                    hasError = false
                                 }
 
-                                if (!isValidTitle(answerB)) {
+                                if (!isValidTitle(answerB) && selectedTypeOption == question_option_type.abcd) {
                                     errorBMsg =
                                         "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                    hasError = false
                                 }
-                                if (answerB.length > 150) {
+                                if (answerB.length > 150 && selectedTypeOption == question_option_type.abcd) {
                                     errorBMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
+                                    hasError = false
                                 }
-                                if (!isValidTitle(answerC)) {
-                                    errorCMsg =
-                                        "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (answerC.length > 150) {
-                                    errorCMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
-                                }
-                                if (!isValidTitle(answerD)) {
-                                    errorDMsg =
-                                        "Câu hỏi không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (answerD.length > 150) {
-                                    errorDMsg = "Câu hỏi không được quá 150 ký tự"
-                                    hasError = true
-                                }
-                                if (!hasError) {
-                                    viewModel.checkQuestionExists(
-                                        title,
-                                        "update",
-                                        selected!!.id
-                                    ) { exists ->
+
+                                if (hasError) {
+                                    viewModel.checkQuestionExists(title,"update", selected!!.id,type_option = selectedTypeOption) { exists ->
                                         if (exists) {
                                             errorMsg = "Câu hỏi đã tồn tại"
                                             hasError = false
@@ -824,6 +780,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
             }
         }
     }
+
     // Delete Dialog
     if (showDeleteDialog && selected != null) {
         Dialog(onDismissRequest = { showDeleteDialog = false }) {

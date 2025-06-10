@@ -1,5 +1,6 @@
 package com.example.aisupabase.controllers
 
+import com.example.aisupabase.models.Tags
 import com.example.aisupabase.models.type_accounts
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -71,6 +72,29 @@ class TypeAccountRepository(private val supabase: SupabaseClient) {
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext TypeAccountResult.Error(e)
+        }
+    }
+
+    suspend fun checkTypeAccount(type: String, case: String = "add", id: Int? = null): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val existing = supabase.postgrest["type_accounts"]
+                .select {
+                    filter {
+                        ilike("type", type)
+                    }
+                }.decodeList<type_accounts>()
+
+            return@withContext when (case) {
+                "update" -> {
+                    existing.any { it.id != id }
+                }
+                else -> {
+                    existing.isNotEmpty()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext false
         }
     }
 }

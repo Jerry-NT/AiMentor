@@ -1,5 +1,4 @@
-package com.example.aisupabase.pages.admin_users
-
+package com.example.aisupabase.pages
 import UserRepository
 import UserResult
 import androidx.compose.foundation.Image

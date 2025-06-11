@@ -19,6 +19,7 @@ import com.example.aisupabase.pages.Client_Course
 import com.example.aisupabase.pages.Client_Search
 import com.example.aisupabase.pages.Client_User
 import com.example.aisupabase.pages.Admin_Users
+import com.example.aisupabase.pages.Client_Question
 import com.example.aisupabase.screens.AdminHomeScreen
 import com.example.aisupabase.screens.ClientHomeScreen
 import com.example.aisupabase.screens.LoginScreen
@@ -52,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 composable("client_blog") { Client_Blog(navController) }
                 composable("client_search") { Client_Search(navController) }
                 composable("client_profile") { Client_User(navController) }
+                composable("client_question") { Client_Question(navController) }
             }
 
 

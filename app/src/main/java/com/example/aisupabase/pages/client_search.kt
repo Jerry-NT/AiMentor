@@ -199,11 +199,11 @@ fun SearchHomeView(
                 .padding(paddingValues)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.background),
+                painter = painterResource(id = R.drawable.client_background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                alpha = 0.5f
+                alpha = 1f
             )
                 Box(modifier = Modifier
                     .fillMaxSize()

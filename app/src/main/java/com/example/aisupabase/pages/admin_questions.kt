@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
@@ -185,12 +186,13 @@ fun Admin_Questions( navController: NavController) {
         }
     }
     val supabase = SupabaseClientProvider.client
-    question_app(supabase)
+    question_app(supabase = supabase, navController = navController)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewModel(factory = questionViewModelFactory (supabase))) {
+fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewModel(factory = questionViewModelFactory (supabase)),
+                 navController: NavController) {
     val questionList by viewModel.questionlist.collectAsState()
     val isloading by viewModel.isloading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -204,6 +206,11 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
         topBar = {
             TopAppBar(
                 title = { Text("Quản lý question") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     Button(
                         onClick = { showAddDialog = true },

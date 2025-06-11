@@ -59,6 +59,7 @@ import kotlin.let
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.ArrowBack
 import com.example.aisupabase.cloudinary.CloudinaryService
 import com.example.aisupabase.config.handle.formatTransactionDate
 import com.example.aisupabase.config.handle.getPublicIdFromUrl
@@ -169,7 +170,7 @@ fun Admin_Blogs( navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    BlogManagementApp(supabase = supabase)
+    BlogManagementApp(supabase = supabase,navController=navController)
 }
 
 // ViewModel factory for BlogsViewModel
@@ -186,7 +187,8 @@ class BlogsViewModelFactory(private val supabase: SupabaseClient) : ViewModelPro
 // Main Composable function for Blog Management
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = viewModel(factory = BlogsViewModelFactory(supabase))) {
+fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = viewModel(factory = BlogsViewModelFactory(supabase)),
+                       navController: NavController) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -201,6 +203,11 @@ fun BlogManagementApp( supabase: SupabaseClient, viewModel: BlogsViewModel = vie
         topBar = {
             TopAppBar(
                 title = { Text("Quản lý Blog") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     Button(
                         onClick = { showAddDialog = true },

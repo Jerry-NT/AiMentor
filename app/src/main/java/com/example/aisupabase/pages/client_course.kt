@@ -20,6 +20,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -56,6 +59,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
+import kotlin.text.get
 
 class courseViewModel(private val courseRespository: CourseRepository):ViewModel()
 {
@@ -165,11 +169,11 @@ fun CourseHomeView(
                 .padding(paddingValues)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.background),
+                painter = painterResource(id = R.drawable.client_background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                alpha = 0.5f
+                alpha = 1f
             )
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
@@ -183,12 +187,20 @@ fun CourseHomeView(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // tab chon cong khai hay ca nhan
-                            TabRow(selectedTabIndex = selectedTabIndex) {
+                            TabRow(selectedTabIndex = selectedTabIndex,
+                                indicator = { tabPositions ->
+                                    TabRowDefaults.Indicator(
+                                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                                        color = Color(0xFF4ECDC4) // Your green color
+                                    )
+                                }) {
                                 tabTitles.forEachIndexed { index, title ->
                                     Tab(
                                         selected = selectedTabIndex == index,
                                         onClick = { selectedTabIndex = index },
-                                        text = { Text(title) }
+                                        selectedContentColor = Color(0xFF4ECDC4),
+                                        text = { Text(text=title,color=Color(0xFF4ECDC4))
+                                        }
                                     )
                                 }
                             }
@@ -198,7 +210,7 @@ fun CourseHomeView(
                         // Dropdown filter
                         Box {
                             TextButton(onClick = { expanded = true }) {
-                                Text(selectedFilter)
+                                Text(text=selectedFilter,color=Color(0xFF4ECDC4))
                             }
                             DropdownMenu(
                                 expanded = expanded,
@@ -206,7 +218,7 @@ fun CourseHomeView(
                             ) {
                                 filterOptions.forEach { option ->
                                     DropdownMenuItem(
-                                        text = { Text(option) },
+                                        text = { Text(text=option,color=Color(0xFF4ECDC4)) },
                                         onClick = {
                                             selectedFilter = option
                                             expanded = false

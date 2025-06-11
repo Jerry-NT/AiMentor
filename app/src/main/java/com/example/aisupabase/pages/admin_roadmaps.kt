@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -162,14 +163,15 @@ fun Admin_Roadmaps( navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    RoadMapManagementApp(supabase)
+    RoadMapManagementApp(supabase = supabase, navController = navController)
 }
 // Validation function for  title
 
 // CRUD  ViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel = viewModel(factory = RoadMapViewModelFactory(RoadMapRepository(supabase)))) {
+fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel = viewModel(factory = RoadMapViewModelFactory(RoadMapRepository(supabase))),
+                         navController: NavController) {
     val roadmaps by viewModel.roadmapList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -183,6 +185,11 @@ fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel =
         topBar = {
             TopAppBar(
                 title = { Text("Admin Dashboard") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     Button(
                         onClick = { showAddDialog = true },

@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -156,11 +157,11 @@ fun BlogHomeView(
                 .padding(paddingValues)
         ){
             Image(
-                painter = painterResource(id = R.drawable.background),
+                painter = painterResource(id = R.drawable.client_background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                alpha = 0.5f
+                alpha = 1f
             )
 
             LazyColumn(
@@ -186,7 +187,7 @@ fun BlogHomeView(
                         // Dropdown filter
                         Box {
                             TextButton(onClick = { expanded = true }) {
-                                Text(selectedFilter)
+                                Text(selectedFilter, color = Color(0xFF4ECDC4))
                             }
                             DropdownMenu(
                                 expanded = expanded,
@@ -194,7 +195,7 @@ fun BlogHomeView(
                             ) {
                                 filterOptions.forEach { option ->
                                     DropdownMenuItem(
-                                        text = { Text(option) },
+                                        text = { Text(text=option, color = Color(0xFF4ECDC4))},
                                         onClick = {
                                             selectedFilter = option
                                             expanded = false

@@ -1,6 +1,8 @@
 package com.example.aisupabase.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -23,9 +25,9 @@ object bottombar{
     ) {
         val items = listOf(
             Triple("Trang chủ", Icons.Default.Home, "client_home"),
-            Triple("Khóa học", Icons.Default.Home, "client_course"),
+            Triple("Khóa học", Icons.Default.AccountBox, "client_course"),
             Triple("Tìm kiếm", Icons.Default.Search, "client_search"),
-            Triple("Blogs", Icons.Default.Home, "client_blog"),
+            Triple("Blogs", Icons.Default.Edit, "client_blog"),
             Triple("Cài đặt", Icons.Default.Settings, "client_profile")
         )
 
@@ -40,8 +42,8 @@ object bottombar{
                         navController.navigate(route)
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF2196F3),
-                        selectedTextColor = Color(0xFF2196F3),
+                        selectedIconColor = Color(0xFF4ECDC4),
+                        selectedTextColor = Color(0xFF4ECDC4),
                         unselectedIconColor = Color.Gray,
                         unselectedTextColor = Color.Gray,
                     )

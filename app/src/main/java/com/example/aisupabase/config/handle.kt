@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aisupabase.models.Tags
@@ -89,6 +90,7 @@ object handle {
         Text(
             text = "${typeAccount?.title_tag ?: "Unknown"}",
             fontSize = 14.sp,
+            color = Color(0xFF4ECDC4),
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }

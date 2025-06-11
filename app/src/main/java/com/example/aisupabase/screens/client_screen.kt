@@ -176,11 +176,11 @@ fun ClientHomeView(
                     .padding(paddingValues)
             ){
                 Image(
-                    painter = painterResource(id = R.drawable.background),
+                    painter = painterResource(id = R.drawable.client_background),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.5f
+                    alpha = 1f
                 )
 
                 LazyColumn(
@@ -196,14 +196,14 @@ fun ClientHomeView(
                             // avatar
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(59.dp)
                                     .clip(CircleShape)
                                     .background(Color.Gray)) {
                                 Image(
                                     painter = painterResource(id = imageResId),
                                     contentDescription = null,
                                     modifier = Modifier
-                                        .size(48.dp)
+                                        .size(59.dp)
                                         .clip(CircleShape)
                                         .background(Color.Gray), // optional nếu ảnh không full bo
                                     contentScale = ContentScale.Crop
@@ -214,12 +214,12 @@ fun ClientHomeView(
                             Column {
                                 Text(
                                     "Chào buổi sáng",
-                                    fontSize = 14.sp,
+                                    fontSize = 15.sp,
                                     color = Color.Gray
                                 )
                                 Text(
                                     "${username}",
-                                    fontSize = 18.sp,
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -240,7 +240,7 @@ fun ClientHomeView(
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = { navController.navigate("client_course") }) {
-                                    Text("Xem tất cả")
+                                    Text("Xem tất cả", color = Color(0xFF4ECDC4))
                                 }
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -265,7 +265,7 @@ fun ClientHomeView(
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = { navController.navigate("client_blog") }) {
-                                    Text("Xem tất cả")
+                                    Text("Xem tất cả",color = Color(0xFF4ECDC4))
                                 }
                             }
 

@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -189,13 +190,14 @@ fun Admin_Courses(navController: NavController) {
 
 
     val supabase = SupabaseClientProvider.client
-    CourseManagementApp(supabase = supabase)
+    CourseManagementApp(supabase = supabase, navController = navController)
 }
 
 // Composable giao diện quản lý courses
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = viewModel(factory = CoursesViewModelFactory(supabase))) {
+fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = viewModel(factory = CoursesViewModelFactory(supabase)),
+                        navController: NavController) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val coursesList by viewModel.coursesList.collectAsState()
@@ -209,6 +211,11 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
         topBar = {
             TopAppBar(
                 title = { Text("Quản lý Khóa học") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     Button(
                         onClick = { showAddDialog = true },

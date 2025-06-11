@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -188,12 +189,13 @@ fun Admin_Lessons( navController: NavController) {
         }
     }
     val supabase = SupabaseClientProvider.client
-    LessionManagermentApp(supabase)
+    LessionManagermentApp(supabase = supabase, navController = navController)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewModel = viewModel(factory = AdminLessonsViewModelFactory(supabase)))
+fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewModel = viewModel(factory = AdminLessonsViewModelFactory(supabase)),
+                          navController: NavController)
 {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -215,6 +217,11 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
         topBar = {
             TopAppBar(
                 title = { Text("Quản lý bài hoc") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
             )
         }
     ){ paddingValues ->

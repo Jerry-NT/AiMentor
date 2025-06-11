@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -173,13 +174,14 @@ fun Admin_Type_Accounts( navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    typeAccountManagementApp(supabase)
+    typeAccountManagementApp(supabase = supabase, navController = navController)
 }
 
 // crud view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsViewModel = viewModel(factory = TypeAccountsViewModelFactory (supabase))){
+fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsViewModel = viewModel(factory = TypeAccountsViewModelFactory (supabase)),
+                             navController: NavController ){
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val typeAccountsList by viewModel.typeAccountsList.collectAsState()
@@ -193,6 +195,11 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
         topBar = {
             TopAppBar(
                 title = { Text("Admin Dashboard") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     Button(
                         onClick = { showAddDialog = true },

@@ -77,7 +77,7 @@ import kotlinx.coroutines.launch
 import kotlin.collections.get
 
 // viewmodel
-class userViewModel(private val userRepository: UserRepository):ViewModel(){
+class ClientUserViewModel(private val userRepository: UserRepository):ViewModel(){
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -103,8 +103,8 @@ class userViewModel(private val userRepository: UserRepository):ViewModel(){
 // viewmodel factory
 class userViewModelFactory(private val supabase: SupabaseClient): ViewModelProvider.Factory{
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(userViewModel::class.java)) {
-            return userViewModel(UserRepository(supabase)) as T
+        if (modelClass.isAssignableFrom(ClientUserViewModel::class.java)) {
+            return ClientUserViewModel(UserRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -138,7 +138,7 @@ data class SettingsItem(
 fun UserHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: userViewModel = viewModel(factory = userViewModelFactory(supabase)
+    viewModel: ClientUserViewModel = viewModel(factory = userViewModelFactory(supabase)
 ))
     {
         val context = LocalContext.current
@@ -159,7 +159,7 @@ fun UserHomeView(
             SettingsItem(
                 title = "Tạo khóa học",
                 icon = Icons.Default.Add,
-                onClick = { /* Navigate to create course */ }
+                onClick = { navController.navigate("client_question") }
             ),
             SettingsItem(
                 title = "Đặt lịch nhắc hẹn",
@@ -215,11 +215,11 @@ fun UserHomeView(
                     .padding(paddingValues)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.background),
+                    painter = painterResource(id = R.drawable.client_background),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    alpha = 0.5f
+                    alpha = 1f
                 )
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
@@ -265,14 +265,14 @@ fun UserHomeView(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // Phone Number
-//                                Text(
-//                                    text = "(+84) ${session["phone"]}",
-//                                    fontSize = 14.sp,
-//                                    color = Color.Gray
-//                                )
-//
-//                                Spacer(modifier = Modifier.height(4.dp))
+                             //    Phone Number
+                                Text(
+                                    text = "(+84) ${session["phone"]}",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+
+                                Spacer(modifier = Modifier.height(4.dp))
 
                                 // Email
                                 Text(
@@ -534,7 +534,7 @@ fun SettingsItemCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
             // Title
             Text(

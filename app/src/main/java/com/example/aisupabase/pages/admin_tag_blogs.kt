@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -134,13 +135,14 @@ fun Admin_Tag_Blogs(navController: NavController) {
         }
     }
     val supabase = SupabaseClientProvider.client
-    TagManagementApp(supabase)
+    TagManagementApp(supabase = supabase, navController = navController)
 }
 
 // CRUD view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TagManagementApp(supabase: SupabaseClient, viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase))) {
+fun TagManagementApp(supabase: SupabaseClient, viewModel: TagViewModel = viewModel(factory = TagViewModelFactory(supabase)),
+                     navController: NavController) {
     val tags by viewModel.tagList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -153,6 +155,11 @@ fun TagManagementApp(supabase: SupabaseClient, viewModel: TagViewModel = viewMod
             topBar = {
                 TopAppBar(
                     title = { Text("Admin Dashboard") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.navigateUp() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    },
                     actions = {
                         Button(
                             onClick = { showAddDialog = true },

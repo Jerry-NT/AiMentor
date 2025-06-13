@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -173,7 +174,8 @@ class courseDetailViewModelFactory(private val supabase: SupabaseClient) : ViewM
         if (modelClass.isAssignableFrom(CourseDetailViewModel::class.java)) {
             return CourseDetailViewModel(
                 CourseRepository(supabase),
-                LessonRepository(supabase),UserRepository(supabase),
+                LessonRepository(supabase),
+                UserRepository(supabase),
                 LearnRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
@@ -412,49 +414,31 @@ fun CourseDetailView(
                                 Spacer(modifier = Modifier.height(32.dp))
 
                                 // Start Button
-                                if(textbutton == "Hoàn thành")
-                                {
-                                    Button(
-                                        onClick = {},
+                                if (textbutton == "Hoàn thành") {
+                                    Text(
+                                        text = "Đã hoàn thành",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF4ECDC4),
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(56.dp),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF4ECDC4)
-                                        )
-                                    ) {
-                                        Icon(
-                                            Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "NÈ",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
-                                else
-                                {
+                                            .height(56.dp)
+                                            .background(Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                                            .wrapContentHeight(Alignment.CenterVertically),
+                                        textAlign = TextAlign.Center
+                                    )
+                                } else {
                                     Button(
                                         onClick = {
-                                            // dang ky khoa hoc
                                             viewModel.checkSub(id_user, id) { exists ->
-                                                if(exists)
-                                                {
-                                                    // tiep tuc hoc
+                                                if (exists) {
                                                     viewModel.continueLesson(id_user, id) { nextLesson ->
                                                         if (nextLesson != null) {
                                                             navController.navigate("client_detail_lesson/${nextLesson.id}")
                                                         }
                                                     }
-                                                }
-                                                else
-                                                {
-                                                    viewModel.subCourse(id_user,id)
+                                                } else {
+                                                    viewModel.subCourse(id_user, id)
                                                 }
                                             }
                                         },

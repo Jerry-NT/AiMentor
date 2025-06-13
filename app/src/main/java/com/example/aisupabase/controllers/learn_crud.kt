@@ -1,5 +1,6 @@
 package com.example.aisupabase.controllers
 
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult
@@ -84,4 +85,65 @@ class LearnRepository(private val supabase: SupabaseClient){
             return@withContext null
         }
     }
+
+//    suspend fun completeLesson(id_user: Int, id_lesson: Int): LearnResult<Unit> = withContext(Dispatchers.IO) {
+//        try {
+//            val result = supabase.postgrest["user_lesson"]
+//                .insert(
+//                    user_lesson(null, id_lesson, id_user, true)
+//                )
+//            return@withContext LearnResult.Success(Unit, result)
+//        } catch (e: Exception) {
+//            return@withContext LearnResult.Error(e)
+//        }
+//    }
+suspend fun completeLesson(id_user: Int, id_lesson: Int): LearnResult<Unit> = withContext(Dispatchers.IO) {
+    try {
+        Log.d("CompleteLesson", "Trying to complete lesson for user $id_user, lesson $id_lesson")
+        val result = supabase.postgrest["user_lesson"]
+            .upsert(user_lesson(null, id_lesson, id_user, true)) // dùng upsert thay insert
+        Log.d("CompleteLesson", "Success: ${result.data}")
+        return@withContext LearnResult.Success(Unit, result)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Log.e("CompleteLesson", "Error: ${e.localizedMessage}")
+        return@withContext LearnResult.Error(e)
+    }
+}
+
+//    suspend fun checkLessonCompleted(id_user: Int, id_lesson: Int): Boolean = withContext(Dispatchers.IO) {
+//        try {
+//            val result = supabase.postgrest["user_lesson"]
+//                .select {
+//                    filter {
+//                        eq("id_user", id_user)
+//                        eq("id_lesson", id_lesson)
+//                        eq("checked", true)
+//                    }
+//                }
+//                .decodeList<user_lesson>()
+//            return@withContext result.isNotEmpty()
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            return@withContext false
+//        }
+//    }
+suspend fun checkLessonCompleted(id_user: Int, id_lesson: Int): Boolean = withContext(Dispatchers.IO) {
+    try {
+        val result = supabase.postgrest["user_lesson"]
+            .select {
+                filter {
+                    eq("id_user", id_user)
+                    eq("id_lesson", id_lesson)
+                    eq("checked", true)
+                }
+            }
+            .decodeList<user_lesson>()
+        return@withContext result.isNotEmpty()
+    } catch (e: Exception) {
+        return@withContext false
+    }
+}
+
+
 }

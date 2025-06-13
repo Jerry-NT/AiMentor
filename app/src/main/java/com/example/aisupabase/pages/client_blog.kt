@@ -213,7 +213,7 @@ fun BlogHomeView(
                             }
 
                             blogToShow.forEach { blog ->
-                                BlogPostItem(blog)
+                                BlogPostItem(blog,navController)
                             }
                         }
                     }

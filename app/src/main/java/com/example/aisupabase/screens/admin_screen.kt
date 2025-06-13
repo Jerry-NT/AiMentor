@@ -33,6 +33,9 @@ import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
+import com.example.aisupabase.ui.theme.bg_card_admin
+import com.example.aisupabase.ui.theme.icon_admin
+import com.example.aisupabase.ui.theme.title_admin
 
 // Data class cho menu items
 data class MenuItem(
@@ -126,13 +129,13 @@ private fun MenuCard(item: MenuItem, onClick: () -> Unit, modifier: Modifier = M
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF4A90E2).copy(alpha = 0.1f)),
+                    .background(bg_card_admin.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = item.icon,
                     contentDescription = item.title,
-                    tint = Color(0xFF4A90E2),
+                    tint = icon_admin,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -144,7 +147,7 @@ private fun MenuCard(item: MenuItem, onClick: () -> Unit, modifier: Modifier = M
                 text = item.title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF333333),
+                color = title_admin,
                 textAlign = TextAlign.Center,
                 lineHeight = 18.sp
             )
@@ -292,6 +295,5 @@ fun AdminHomeScreen(navController: NavController) {
         }
     }
 
-    val supabase = SupabaseClientProvider.client
     AdminDashboard(navController)
 }

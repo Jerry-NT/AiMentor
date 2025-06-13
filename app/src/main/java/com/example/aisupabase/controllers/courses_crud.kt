@@ -51,6 +51,22 @@ class CourseRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    // get course by id
+    suspend fun getCourseByID(id:Int): CourseResult<List<courses>> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.from("courses").select{
+                filter {
+                    eq("id", id)
+                }
+            }
+
+            val coursesList = result.decodeList<courses>()
+            return@withContext CourseResult.Success(coursesList, result)
+        } catch (e: Exception) {
+            return@withContext CourseResult.Error(e)
+        }
+    }
+
     suspend fun addCourse(
         title_course: String,
         des_course: String,

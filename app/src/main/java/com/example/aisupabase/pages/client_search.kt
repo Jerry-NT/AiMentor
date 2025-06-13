@@ -237,7 +237,7 @@ fun SearchHomeView(
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
                                 searchResults.forEach { result ->
-                                    PopularCourseItem(course = result)
+                                    PopularCourseItem(course = result,navController)
                                 }
                             }
                             if(!searchResultsBlog.isEmpty()){
@@ -248,7 +248,7 @@ fun SearchHomeView(
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
                                 searchResultsBlog.forEach { result ->
-                                    BlogPostItem(blogPost = result)
+                                    BlogPostItem(blogPost = result,navController)
                                 }
                             }
 

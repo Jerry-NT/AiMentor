@@ -26,6 +26,19 @@ sealed class UserResult<out T> {
         }
     }
 
+    // lay user by id
+    suspend fun getUserByID(id:Int): UserResult<List<Users>> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.postgrest["users"].select{
+                filter { eq("id",id) }
+            }
+            val users = result.decodeList<Users>()
+            return@withContext UserResult.Success(users, result)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext UserResult.Error(e)
+        }
+    }
     suspend fun updateUser(user:Users):UserResult<Unit> = withContext(Dispatchers.IO)
     {
         try {

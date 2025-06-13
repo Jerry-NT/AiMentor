@@ -41,6 +41,20 @@ class BlogRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    // lay blog theo id
+    suspend fun getBlogByID(id: Int): BlogResult<List<blogs>> = withContext(Dispatchers.IO)
+    {
+        try {
+            val result = supabase.from("blogs").select{
+                filter { eq("id", id) }
+            }
+            val blogsList = result.decodeList<blogs>()
+            return@withContext BlogResult.Success(blogsList, result)
+        } catch (e: Exception) {
+            return@withContext BlogResult.Error(e)
+        }
+    }
+
     suspend fun addBlog(
         title_blog: String,
         public_id_image: String,

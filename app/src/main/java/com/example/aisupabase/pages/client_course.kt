@@ -246,7 +246,7 @@ fun CourseHomeView(
 
                             // hien thi ket qua
                             coursesToShow.forEach { course ->
-                                PopularCourseItem(course = course)
+                                PopularCourseItem(course = course,navController)
                             }
                         }
                     }

@@ -48,6 +48,8 @@ import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
 import com.example.aisupabase.models.type_accounts
+import com.example.aisupabase.ui.theme.errorRed
+import com.example.aisupabase.ui.theme.primaryBlue
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
@@ -97,10 +99,6 @@ fun LoginScreenContent(navController: NavController) {
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
-    // Colors
-    val errorRed = Color(0xFFD32F2F)
-    val primaryBlue = Color(0xFF4361EE)
 
     // Main layout
     Box(modifier = Modifier.fillMaxSize()) {
@@ -316,8 +314,7 @@ suspend fun login(
     password: String,
     navController: NavController,
     context: Context,
-    onLoadingChange: (Boolean) -> Unit
-) {
+    onLoadingChange: (Boolean) -> Unit) {
     val supabase = SupabaseClientProvider.client
 
     try {

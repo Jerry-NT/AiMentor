@@ -26,6 +26,8 @@ import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.models.UserRole
 import com.example.aisupabase.models.Users
+import com.example.aisupabase.ui.theme.errorRed
+import com.example.aisupabase.ui.theme.primaryBlue
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
@@ -42,10 +44,7 @@ fun RegisterScreen(navController: NavController) {
 // view and function register
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun RegistrationScreen(
-    navController: NavController,
-
-) {
+fun RegistrationScreen(navController: NavController) {
     // Khai báo các biến state để lưu trữ giá trị nhập vào
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -57,11 +56,9 @@ fun RegistrationScreen(
     var emailError by remember { mutableStateOf<String?>(null) }
     var phoneError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
-    val errorRed = Color(0xFFD32F2F)
+
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
-    // Màu xanh dương cho nút đăng ký và link đăng nhập
-    val primaryBlue = Color(0xFF4361EE)
 
     // Sử dụng Box để đặt hình nền và nội dung chồng lên nhau
     Box(modifier = Modifier.fillMaxSize()) {
@@ -222,10 +219,12 @@ fun RegistrationScreen(
                             if (!isLoading) {
                             // Validate
                             var valid = true
+
                             if (fullName.length < 8) {
                                 fullNameError = "Họ và tên tối thiểu 8 ký tự"
                                 valid = false
-                            }else if (!fullName.matches(Regex("^[a-zA-ZÀ-ỹ\\s]+$"))) {
+                            }
+                            else if (!fullName.matches(Regex("^[a-zA-ZÀ-ỹ\\s]+$"))) {
                                 fullNameError = "Họ và tên không chứa số hoặc ký tự đặc biệt"
                                 valid = false
                             }
@@ -234,21 +233,26 @@ fun RegistrationScreen(
                                 emailError = "Email không hợp lệ"
                                 valid = false
                             }
+
                             if (!phoneNumber.matches(Regex("^\\d{10,11}$"))) {
                                 phoneError = "Số điện thoại phải là 10-11 số"
                                 valid = false
                             }
+
                             if (password.length < 8) {
                                 passwordError = "Mật khẩu tối thiểu 8 ký tự"
                                 valid = false
-                            } else if (!password.any { it.isUpperCase() }) {
+                            }
+                            else if (!password.any { it.isUpperCase() }) {
                                 passwordError = "Mật khẩu phải có ít nhất 1 chữ cái viết hoa"
                                 valid = false
                             }
                             isLoading = true
+
                             if (valid) {
                                 Register(context,email, fullName, password, phoneNumber,onLoadingChange = { isLoading = it })
                             }
+
                             }
                         },
                         modifier = Modifier
@@ -304,6 +308,7 @@ fun RegistrationScreen(
         }
     }
 }
+
 @SuppressLint("UnusedBoxWithConstraintsScope")
 fun Register(
     context: Context,

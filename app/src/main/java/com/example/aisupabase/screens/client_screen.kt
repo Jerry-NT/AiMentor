@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -43,10 +41,7 @@ import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
-import com.example.aisupabase.controllers.TagRepository
-import com.example.aisupabase.controllers.TagResult
 import com.example.aisupabase.controllers.authUser
-import com.example.aisupabase.models.Tags
 import courses
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,9 +54,8 @@ import com.example.aisupabase.components.card_components.PopularCourseItem
 
 // view model
 class homeViewModel(
-    private val blogRespository: BlogRepository,
-    private val courseRepository: CourseRepository) : ViewModel()
-{
+    private val blogRepository: BlogRepository,
+    private val courseRepository: CourseRepository) : ViewModel() {
 
     private val _blogsList = MutableStateFlow<List<blogs>>(emptyList())
     val blogsList: StateFlow<List<blogs>> = _blogsList
@@ -80,12 +74,11 @@ class homeViewModel(
         fetchCourses()
     }
 
-
     private fun fetchBlogs() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = blogRespository.getLatestBlogs()) {
+            when (val result = blogRepository.getLatestBlogs()) {
                 is BlogResult.Success -> _blogsList.value = result.data ?: emptyList()
                 is BlogResult.Error -> _error.value = result.exception.message
             }
@@ -117,6 +110,7 @@ class HomeViewModelFactory(private val supabase: SupabaseClient) : ViewModelProv
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+
 //  Main Activity
 @Composable
 fun ClientHomeScreen(navController: NavController) {
@@ -141,12 +135,14 @@ fun ClientHomeScreen(navController: NavController) {
 fun ClientHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: homeViewModel = viewModel(factory = HomeViewModelFactory (supabase))){
+    viewModel: homeViewModel = viewModel(factory = HomeViewModelFactory (supabase)))
+{
 
     val Listblogs by viewModel.blogsList.collectAsState()
     val Listcourses by viewModel.courseList.collectAsState()
 
     val context = LocalContext.current
+
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -245,7 +241,7 @@ fun ClientHomeView(
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Listcourses.forEach { course ->
-                                    PopularCourseItem(course = course)
+                                    PopularCourseItem(course = course,navController)
                                 }
                             }
                         }
@@ -271,14 +267,13 @@ fun ClientHomeView(
 
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Listblogs.forEach { blog ->
-                                    BlogPostItem(blog)
+                                    BlogPostItem(blog,navController)
                                 }
                             }
                         }
                     }
                 }
             }
-
     }
 }
 

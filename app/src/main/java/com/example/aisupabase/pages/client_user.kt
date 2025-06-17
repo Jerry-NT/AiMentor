@@ -38,6 +38,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +69,8 @@ import com.example.aisupabase.R
 import com.example.aisupabase.components.bottombar.BottomNavigationBar
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
+import com.example.aisupabase.controllers.notification_crud.createNotificationChannel
+import com.example.aisupabase.controllers.notification_crud.scheduleDailyNotification
 import com.example.aisupabase.models.UserRole
 import com.example.aisupabase.models.Users
 import com.example.aisupabase.ui.theme.Blue
@@ -74,6 +78,7 @@ import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalTime
 import kotlin.collections.get
 
 // viewmodel
@@ -148,6 +153,8 @@ fun UserHomeView(
         val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
         val imageResId = if (resId != 0) resId else R.drawable.background
 
+        var showTimeDialog by remember { mutableStateOf(false) }
+        var pickedTime by remember { mutableStateOf<LocalTime?>(null) }
         var showUpdateDialog by remember { mutableStateOf(false) }
 
         val settingsItems = listOf(
@@ -164,7 +171,7 @@ fun UserHomeView(
             SettingsItem(
                 title = "Đặt lịch nhắc hẹn",
                 icon = Icons.Default.Notifications,
-                onClick = { /* Navigate to reminder settings */ }
+                onClick = { showTimeDialog = true }
             ),
             SettingsItem(
                 title = "Đăng xuất",
@@ -492,6 +499,18 @@ fun UserHomeView(
                 }
             }
         }
+
+        if (showTimeDialog) {
+            TimePickerDialog(
+                onDismissRequest = { showTimeDialog = false },
+                onTimeSelected = { time -> // lưu giờ người dùng chọn
+                    showTimeDialog = false
+                    createNotificationChannel(context)
+                    scheduleDailyNotification(context,"tieu de","message",time.hour,time.minute)
+                }
+            )
+        }
+
     }
 
 @Composable
@@ -547,6 +566,46 @@ fun SettingsItemCard(
                     Color.Black,
                 modifier = Modifier.weight(1f)
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerDialog(
+    onDismissRequest: () -> Unit,
+    onTimeSelected: (LocalTime) -> Unit
+) {
+    val timeState = rememberTimePickerState(is24Hour = true)   // 24 h, đổi thành false nếu muốn 12 h
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TimePicker(state = timeState)
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    OutlinedButton(onClick = onDismissRequest) {
+                        Text("Hủy")
+                    }
+                    Button(onClick = {
+                        val picked = LocalTime(timeState.hour, timeState.minute)
+                        onTimeSelected(picked)
+                    }) {
+                        Text("Xác nhận")
+                    }
+                }
+            }
         }
     }
 }

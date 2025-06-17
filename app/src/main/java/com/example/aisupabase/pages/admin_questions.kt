@@ -191,7 +191,7 @@ fun Admin_Questions( navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewModel(factory = questionViewModelFactory (supabase)),
+fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewModel(factory = questionViewModelFactory(supabase)),
                  navController: NavController) {
     val questionList by viewModel.questionlist.collectAsState()
     val isloading by viewModel.isloading.collectAsState()

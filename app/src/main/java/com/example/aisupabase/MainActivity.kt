@@ -20,7 +20,12 @@ import com.example.aisupabase.pages.Client_Search
 import com.example.aisupabase.pages.Client_User
 import com.example.aisupabase.pages.Admin_Users
 import com.example.aisupabase.pages.Blog_Detail
+import com.example.aisupabase.pages.ClientCourseByRM
+import com.example.aisupabase.pages.Client_Blog_By_Tag
+import com.example.aisupabase.pages.Client_Course_User
 import com.example.aisupabase.pages.Client_Question
+import com.example.aisupabase.pages.Client_RM
+import com.example.aisupabase.pages.Client_Tag
 import com.example.aisupabase.pages.Course_Detail
 import com.example.aisupabase.pages.Lesson_Detail
 import com.example.aisupabase.screens.AdminHomeScreen
@@ -57,6 +62,9 @@ class MainActivity : ComponentActivity() {
                 composable("client_search") { Client_Search(navController) }
                 composable("client_profile") { Client_User(navController) }
                 composable("client_question") { Client_Question(navController) }
+                composable("client_tag") { Client_Tag(navController) }
+                composable("client_roadmap") { Client_RM(navController) }
+                composable("client_course_user") { Client_Course_User(navController) }
 
                 // client detail page
                 composable("client_detail_blog/{id}") { backStackEntry ->
@@ -72,6 +80,16 @@ class MainActivity : ComponentActivity() {
                 composable("client_detail_lesson/{id}") { backStackEntry ->
                     val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
                     Lesson_Detail(navController, id)
+                }
+
+                composable("client_blog_by_tag/{id}") { backStackEntry ->
+                    val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
+                    Client_Blog_By_Tag(navController, id)
+                }
+
+                composable("client_course_by_roadmap/{id}") { backStackEntry ->
+                    val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
+                    ClientCourseByRM(navController, id)
                 }
             }
 

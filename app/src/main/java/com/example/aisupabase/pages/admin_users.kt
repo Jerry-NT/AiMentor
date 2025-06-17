@@ -85,7 +85,7 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
 }
 
 
-class UserViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+class UserViewModelFactoryT(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
             return UserViewModel(UserRepository(supabase)) as T
@@ -117,7 +117,7 @@ fun Admin_Users( navController: NavController) {
 @Composable
 fun AdminUsersScreen(
     supabase:SupabaseClient,
-    viewModel: UserViewModel = viewModel(factory = UserViewModelFactory (supabase)),
+    viewModel: UserViewModel = viewModel(factory = UserViewModelFactoryT (supabase)),
     navController: NavController
     ) {
     val isLoading by viewModel.isLoading.collectAsState()

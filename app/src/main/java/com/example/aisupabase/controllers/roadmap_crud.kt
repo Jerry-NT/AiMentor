@@ -28,7 +28,21 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    // lay danh sach theo id
     // Xóa theo id
+    suspend fun getRoadMapByID(id:Int): RoadMapResult<List<course_roadmaps>> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.postgrest["course_roadmaps"].select{
+                filter { eq("id",id) }
+            }
+            val RoadMaps = result.decodeList<course_roadmaps>()
+            return@withContext RoadMapResult.Success(RoadMaps, result)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext RoadMapResult.Error(e)
+        }
+    }
+
     suspend fun deleteRoadMap(id: Int): RoadMapResult<Unit> = withContext(Dispatchers.IO) {
         try {
             // xoa course

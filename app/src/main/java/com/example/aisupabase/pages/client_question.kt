@@ -73,7 +73,7 @@ class ClientQuestionViewModel(private val repository: questionRepositon): ViewMo
 }
 
 // viewmodel factory
-class QuestionViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+class ClientQuestionViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ClientQuestionViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
@@ -104,7 +104,7 @@ fun Client_Question(navController: NavController) {
 @Composable
 fun Client_Onboarding(
     supabase: SupabaseClient,
-    viewModel: ClientQuestionViewModel = viewModel(factory = QuestionViewModelFactory(supabase))
+    viewModel: ClientQuestionViewModel = viewModel(factory = ClientQuestionViewModelFactory(supabase))
 ) {
     val questionList by viewModel.questionlist.collectAsState()
 

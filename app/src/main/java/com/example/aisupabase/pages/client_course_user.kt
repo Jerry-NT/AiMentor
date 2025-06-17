@@ -38,26 +38,31 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.example.aisupabase.components.bottombar.BottomNavigationBar
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.controllers.CourseRepository
-import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.authUser
-import courses
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
+import com.example.aisupabase.components.card_components.CourseCard
 import com.example.aisupabase.components.card_components.PopularCourseItem
+import com.example.aisupabase.controllers.CourseRepository
+import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.LearnRepository
+import com.example.aisupabase.controllers.RoadMapRepository
+import courses
+import kotlin.collections.plus
 
-class courseViewModel(
-    private val courseRespository: CourseRepository,
-    private val learnRepository: LearnRepository
-    ):ViewModel()
+class ClientCourseUserViewModel(
+    private val courseRepository: CourseRepository
+):ViewModel()
 {
-    private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
-    val courseList: StateFlow<List<courses>> = _coursesList
+    private val _courseList = MutableStateFlow<List<courses>>(emptyList())
+    val courseList: StateFlow<List<courses>> = _courseList
+
+    private val _courseListbyUser = MutableStateFlow<List<courses>>(emptyList())
+    val courseListbyUser: StateFlow<List<courses>> = _courseListbyUser
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -65,44 +70,46 @@ class courseViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    init {
-        fetchCourse()
-    }
-    private fun fetchCourse() {
+    fun fetchCoursesByUser(id_user:Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = courseRespository.getCourses()) {
-                is CourseResult.Success -> _coursesList.value = result.data ?: emptyList()
+            when (val result = courseRepository.getCourseByUserID(id_user)) {
+                is CourseResult.Success -> _courseListbyUser.value = result.data ?: emptyList()
                 is CourseResult.Error -> _error.value = result.exception.message
             }
             _isLoading.value = false
         }
     }
 
-    private val _subCounts = MutableStateFlow<Map<Int, Int>>(emptyMap())
-    val subCounts: StateFlow<Map<Int, Int>> = _subCounts
 
-    fun getCountSub(id: Int) {
+    private val _processMap = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    val processMap: StateFlow<Map<Int, Double>> = _processMap
+
+    fun getProcess(id_user: Int, id_course: Int) {
         viewModelScope.launch {
-            val count = learnRepository.getCountSub(id) ?: 0
-            _subCounts.value = _subCounts.value.toMutableMap().apply { put(id, count) }
+            _isLoading.value = true
+            _error.value = null
+            when (val result = courseRepository.processCourse(id_user, id_course)) {
+                else -> _processMap.value = _processMap.value + (id_course to result)
+            }
+            _isLoading.value = false
         }
     }
 }
 
 // view factory
-class courseViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+class ClientCourseUserViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(courseViewModel::class.java)) {
-            return courseViewModel(CourseRepository(supabase), LearnRepository(supabase)) as T
+        if (modelClass.isAssignableFrom(ClientCourseUserViewModel::class.java)) {
+            return ClientCourseUserViewModel(CourseRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
 @Composable
-fun Client_Course(navController: NavController) {
+fun Client_Course_User(navController: NavController) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val session = authUser().getUserSession(context)
@@ -115,25 +122,24 @@ fun Client_Course(navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    CourseHomeView(navController,supabase)
-
+    ClientCourseUserHomeView(navController,supabase)
 }
 
 // CRUD view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CourseHomeView(
+fun ClientCourseUserHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: courseViewModel = viewModel(factory = courseViewModelFactory(supabase))
+    viewModel: ClientCourseUserViewModel = viewModel(factory =ClientCourseUserViewModelFactory(supabase))
 )
 {
-    val Listcourses by viewModel.courseList.collectAsState()
-
+    val ListcoursesByUser by viewModel.courseListbyUser.collectAsState()
+    val processMap by viewModel.processMap.collectAsState()
     // thông tin user
     val context = LocalContext.current
     val session = authUser().getUserSession(context)
-
+    val id_user = session["id"]
     // bottom bar setup
     val routeToIndex = mapOf(
         "client_home" to 0,
@@ -146,12 +152,14 @@ fun CourseHomeView(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
-    val subCounts by viewModel.subCounts.collectAsState()
 
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
     }
 
+    LaunchedEffect(id_user) {
+        viewModel.fetchCoursesByUser(id_user as Int)
+    }
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
@@ -204,21 +212,17 @@ fun CourseHomeView(
                             modifier = Modifier.padding(bottom = 20.dp)
                         )
                     }
-
-
-
-                    items(Listcourses) { course ->
-                        val count = subCounts[course.id ?: 0] ?: 0
-                        LaunchedEffect(course.id) {
-                            if (!subCounts.containsKey(course.id ?: 0)) {
-                                viewModel.getCountSub(course.id ?: 0)
-                            }
-                        }
-                        PopularCourseItem(course, navController, count)
+                            items(ListcoursesByUser) { course ->
+                                LaunchedEffect(course.id,id_user) {
+                                    viewModel.getProcess(id_user as Int,course.id ?: 0)
+                                }
+                                val process = processMap[course.id ?: 0] ?: 0.0
+                                CourseCard(course, process,navController)
                     }
+
                 }
             }
 
         }
-        }
     }
+}

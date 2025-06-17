@@ -15,7 +15,17 @@ android {
         buildConfig = true
         compose = true
     }
-    
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true // ✅ đúng cú pháp Kotlin DSL
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
     defaultConfig {
         applicationId = "com.example.aisupabase"
         minSdk = 27
@@ -92,6 +102,9 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation ("com.cloudinary:cloudinary-android:3.0.2")
 
+    implementation ("androidx.compose.material3:material3:1.2.0-alpha05") // hoặc mới hơn
+    // Nếu chưa bật java‑time desugaring:
+    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.4")
 
-
+    implementation ("androidx.work:work-runtime-ktx:2.9.0")
 }

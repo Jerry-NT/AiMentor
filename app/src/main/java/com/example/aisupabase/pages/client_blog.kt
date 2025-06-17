@@ -1,6 +1,7 @@
 package com.example.aisupabase.pages
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -41,9 +47,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import blogs
+import coil.compose.AsyncImage
 import com.example.aisupabase.R
 import com.example.aisupabase.components.bottombar.BottomNavigationBar
 import com.example.aisupabase.components.card_components.BlogPostItem
+import com.example.aisupabase.components.card_components.PopularCourseItem
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
@@ -151,75 +159,56 @@ fun BlogHomeView(
             )
         }
     ){paddingValues ->
+
         Box(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(paddingValues)
-        ){
-            Image(
-                painter = painterResource(id = R.drawable.client_background),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = 1f
-            )
-
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp))
-            {
-                item {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "Danh sách blog",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold ,
-                                modifier = Modifier.padding(bottom = 16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0x994C1D95),
+                                Color(0x996366F1),
+                                Color(0x9972658F),
+                                Color(0x999595B7)
                             )
-                        }
+                        )
+                    )
+            ) {
+                AsyncImage(
+                    model = R.drawable.pic_1,
+                    contentDescription = "Ảnh",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // Dropdown filter
-                        Box {
-                            TextButton(onClick = { expanded = true }) {
-                                Text(selectedFilter, color = Color(0xFF4ECDC4))
-                            }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                filterOptions.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(text=option, color = Color(0xFF4ECDC4))},
-                                        onClick = {
-                                            selectedFilter = option
-                                            expanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item(span = { GridItemSpan(2) }) {
+                        Text(
+                            text = "Danh sách khóa học",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            lineHeight = 32.sp,
+                            modifier = Modifier.padding(bottom = 20.dp)
+                        )
+                    }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            val blogToShow = when (selectedFilter) {
-                                "Mới nhất" -> Listblogs.sortedByDescending { it.created_at }
-                                "Cũ nhất" -> Listblogs.sortedBy { it.created_at }
-                                else -> Listblogs
-                            }
-
-                            blogToShow.forEach { blog ->
-                                BlogPostItem(blog,navController)
-                            }
-                        }
+                    items(Listblogs) { blog ->
+                        BlogPostItem(blog, navController)
                     }
                 }
             }
         }
-
     }
 }

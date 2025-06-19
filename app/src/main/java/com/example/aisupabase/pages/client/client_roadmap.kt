@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.client
 
 import androidx.compose.foundation.background
 import com.example.aisupabase.R
@@ -45,23 +45,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import com.example.aisupabase.components.card_components.CourseCard
-import com.example.aisupabase.components.card_components.PopularCourseItem
 import com.example.aisupabase.components.card_components.roadmapItem
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
-import com.example.aisupabase.controllers.LearnRepository
 import com.example.aisupabase.controllers.RoadMapRepository
 import com.example.aisupabase.controllers.RoadMapResult
 import course_roadmaps
 import courses
 import kotlin.collections.plus
 
-class ClientCourseByRMViewModel(
+class ClientRMViewModel(
     private val courseRepository: CourseRepository,
     private val roadMapRepository: RoadMapRepository,
-    private val learnRepository: LearnRepository
 ):ViewModel()
 {
     private val _courseList = MutableStateFlow<List<courses>>(emptyList())
@@ -76,24 +71,18 @@ class ClientCourseByRMViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _roadmapCourseCounts = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val roadmapCourseCounts: StateFlow<Map<Int, Int>> = _roadmapCourseCounts
 
-    fun loadCourseCountForRoadmap(id: Int) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            when (val result = courseRepository.getCourseByIDRoadMap(id)) {
-                is CourseResult.Success -> _courseList.value = result.data ?: emptyList()
-                is CourseResult.Error -> _error.value = result.exception.message
-            }
-            _isLoading.value = false
-        }
+    init {
+        fetchRoadMap()
     }
-    fun getRoadMapByID(id:Int)
-    {
+
+    private fun fetchRoadMap() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = roadMapRepository.getRoadMapByID(id)) {
+            when (val result = roadMapRepository.getRoadMaps()) {
                 is RoadMapResult.Success -> _roadMapList.value = result.data ?: emptyList()
                 is RoadMapResult.Error -> _error.value = result.exception.message
             }
@@ -101,37 +90,31 @@ class ClientCourseByRMViewModel(
         }
     }
 
-
-    private val _subCount = MutableStateFlow(0)
-    val subCount: StateFlow<Int> = _subCount
-
-    fun getCountSub(id: Int) {
+    fun loadCourseCountForRoadmap(roadmapId: Int) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            when (val result = learnRepository.getCountSub(id)) {
-                else -> _subCount.value = result ?: 0
+            when (val result = courseRepository.getCourseByIDRoadMap(roadmapId)) {
+                is CourseResult.Success -> {
+                    val count = result.data?.size ?: 0
+                    _roadmapCourseCounts.value = _roadmapCourseCounts.value + (roadmapId to count)
+                }
+                else -> { /* handle error if needed */ }
             }
-            _isLoading.value = false
         }
     }
-
-    private val _processMap = MutableStateFlow<Map<Int, Double>>(emptyMap())
 }
 
 // view factory
-class ClientCourseByRMViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+class ClientRMViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ClientCourseByRMViewModel::class.java)) {
-            return ClientCourseByRMViewModel(CourseRepository(supabase), RoadMapRepository(supabase),
-                LearnRepository(supabase)) as T
+        if (modelClass.isAssignableFrom(ClientRMViewModel::class.java)) {
+            return ClientRMViewModel(CourseRepository(supabase), RoadMapRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
 @Composable
-fun ClientCourseByRM(navController: NavController,id:Int) {
+fun Client_RM(navController: NavController) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val session = authUser().getUserSession(context)
@@ -144,29 +127,25 @@ fun ClientCourseByRM(navController: NavController,id:Int) {
     }
 
     val supabase = SupabaseClientProvider.client
-    ClientCourseByRMHomeView(id,navController,supabase)
-
-
+    ClientRMHomeView(navController,supabase)
 
 }
 
 // CRUD view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClientCourseByRMHomeView(
-    id:Int,
+fun ClientRMHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: ClientCourseByRMViewModel = viewModel(factory =ClientCourseByRMViewModelFactory(supabase))
+    viewModel: ClientRMViewModel = viewModel(factory = ClientRMViewModelFactory(supabase))
 )
 {
-    val Listcourses by viewModel.courseList.collectAsState()
-    val Listroadmap by viewModel.roadMapList.collectAsState()
-    val subCount by viewModel.subCount.collectAsState()
+    val ListRoadMap by viewModel.roadMapList.collectAsState()
+
     // thông tin user
     val context = LocalContext.current
     val session = authUser().getUserSession(context)
-    val id_user = session["id"]
+
     // bottom bar setup
     val routeToIndex = mapOf(
         "client_home" to 0,
@@ -180,13 +159,9 @@ fun ClientCourseByRMHomeView(
     val currentRoute = navBackStackEntry?.destination?.route
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
 
+    val roadmapCourseCounts by viewModel.roadmapCourseCounts.collectAsState()
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
-    }
-
-    LaunchedEffect(id) {
-        viewModel.getRoadMapByID(id)
-        viewModel.loadCourseCountForRoadmap(id)
     }
 
     Scaffold(
@@ -233,7 +208,7 @@ fun ClientCourseByRMHomeView(
                 ) {
                     item(span = { GridItemSpan(2) }) {
                         Text(
-                            text = "Danh sách khóa học",
+                            text = "Danh sách lộ trình",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -241,16 +216,18 @@ fun ClientCourseByRMHomeView(
                             modifier = Modifier.padding(bottom = 20.dp)
                         )
                     }
-                    if(Listroadmap.isNotEmpty())
-                    {
-                            items(Listcourses) { course ->
-                                LaunchedEffect(course.id) {
-                                    viewModel.getCountSub(course.id ?: 0)
-                                }
-                                PopularCourseItem(course, navController,subCount)
-                            }
-                    }
 
+                    items(ListRoadMap) { roadmap ->
+                        if(roadmap.title !== "Người dùng")
+                        {
+                        val count = roadmapCourseCounts[roadmap.id ?: 0] ?: 0
+                        LaunchedEffect(roadmap.id) {
+                            viewModel.loadCourseCountForRoadmap(roadmap.id ?: 0)
+                        }
+                        roadmapItem(roadmap, count,navController)
+                        }
+
+                    }
                 }
             }
 

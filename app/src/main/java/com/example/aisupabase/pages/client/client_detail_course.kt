@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.client
 
 import UserRepository
 import androidx.compose.foundation.background
@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,7 +59,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.aisupabase.components.card_components.LessonItem
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.LearnRepository
@@ -67,7 +67,6 @@ import com.example.aisupabase.controllers.LessonRepository
 import com.example.aisupabase.controllers.LessonResult
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
-import com.example.aisupabase.ui.theme.White
 import courses
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,9 +79,8 @@ class CourseDetailViewModel(
     private val courseRepository: CourseRepository,
     private val lessonRepository: LessonRepository,
     private val userRepository: UserRepository,
-    private val learnRepository: LearnRepository
-    ): ViewModel() {
-
+    private val learnRepository: LearnRepository): ViewModel()
+{
     private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
     val coursesList: StateFlow<List<courses>> = _coursesList
 
@@ -195,7 +193,6 @@ fun Course_Detail(navController: NavController,id:Int)
             navController.navigate("login");
         }
     }
-
     val supabase = SupabaseClientProvider.client
     CourseDetailView(id, session["id"] as Int,navController,supabase)
 }
@@ -281,7 +278,7 @@ fun CourseDetailView(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    brush = Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
                                             Color.Black.copy(alpha = 0.7f)

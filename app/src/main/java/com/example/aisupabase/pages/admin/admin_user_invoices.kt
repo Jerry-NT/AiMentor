@@ -1,6 +1,5 @@
-package com.example.aisupabase.pages
-import UserRepository
-import UserResult
+package com.example.aisupabase.pages.admin
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -46,49 +44,47 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.config.function_handle_public.formatTransactionDate
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
-import com.example.aisupabase.models.type_accounts
+import invoices
+import invoicesRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-//viewmodel
-class UserViewModel(private val repository: UserRepository) : ViewModel() {
-    private val _users = MutableStateFlow<List<Users>>(emptyList())
-    val userlist: StateFlow<List<Users>> = _users
+class InvoiceViewModel(private val repository: invoicesRepository) : ViewModel() {
+    private val _invoices = MutableStateFlow<List<invoices>>(emptyList())
+    val invoicelist:StateFlow<List<invoices>> = _invoices
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
-
-    // Khởi tạo dữ liệu người dùng
+    // Khởi tạo dữ liệu hóa đơn
     init {
-        getUsers()
+        getInvoices()
     }
-
-   fun getUsers() {
+    fun getInvoices() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.getUsers()) {
-                is UserResult.Success -> _users.value = result.data ?: emptyList()
-                is UserResult.Error -> _error.value = "Failed to load tags: ${result.exception.message}"
+            when (val result = repository.getInvoice()) {
+                is InvoiceResult.Success -> _invoices.value = result.data ?: emptyList()
+                is InvoiceResult.Error -> _error.value = "Failed to load tags: ${result.exception.message}"
+                else ->{}
             }
             _isLoading.value = false
         }
     }
 }
-
-
-class UserViewModelFactoryT(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
-            return UserViewModel(UserRepository(supabase)) as T
+class InvoiceViewModelFactory(private val supabase: SupabaseClient): ViewModelProvider.Factory{
+    override fun <T: ViewModel>create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(InvoiceViewModel::class.java)) {
+            return InvoiceViewModel(invoicesRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -96,8 +92,7 @@ class UserViewModelFactoryT(private val supabase: SupabaseClient) : ViewModelPro
 
 //  Main Activity
 @Composable
-fun Admin_Users( navController: NavController) {
-    // xử lý logic xác thực người dùng, kiểm tra quyền truy cập, v.v.
+fun Admin_User_Invoids(navController: NavController) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val session = authUser().getUserSession(context)
@@ -105,24 +100,26 @@ fun Admin_Users( navController: NavController) {
         val username = session["username"] as? String
         if (username == null || role != "admin") {
             authUser().clearUserSession(context)
-            navController.navigate("login");
+            navController.navigate("login")
         }
     }
 
     val supabase = SupabaseClientProvider.client
-    AdminUsersScreen(supabase = supabase,navController=navController)
+    invoicesScreen(supabase = supabase, navController = navController)
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminUsersScreen(
-    supabase:SupabaseClient,
-    viewModel: UserViewModel = viewModel(factory = UserViewModelFactoryT (supabase)),
+fun invoicesScreen(
+    supabase: SupabaseClient,
+    viewModel: InvoiceViewModel= viewModel(factory = InvoiceViewModelFactory(supabase)),
     navController: NavController
-    ) {
+){
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val users by viewModel.userlist.collectAsState()
+    val invoices by viewModel.invoicelist.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -159,7 +156,7 @@ fun AdminUsersScreen(
                             color = Color.Red,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
-                        Button(onClick = { viewModel.getUsers() }) { Text("Retry") }
+                        Button(onClick = { viewModel.getInvoices() }) { Text("Retry") }
                     }
                 }
                 else->{
@@ -170,13 +167,12 @@ fun AdminUsersScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ){
 
-                        itemsIndexed (users) { index, user ->
+                        itemsIndexed (invoices) { index, invoice ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                                shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
 
                             ) {
@@ -192,25 +188,33 @@ fun AdminUsersScreen(
                                         fontSize = 16.sp,
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
-
+                                    UsersText(supabase, invoice.id_user)
                                     // Tiêu đề
                                     Text(
-                                        text = "Họ và tên: ${user.username}",
+                                        text = "Số lượng: ${invoice.amount}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
                                     Text(
-                                        text = "Email: ${user.email}",
+                                        text = "Tiền tệ: ${invoice.currency}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
                                     Text(
-                                        text = "Số điện thoại: ${user.phone}",
+                                        text = "Phương thức: ${invoice.payment_method}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
-                                    // Ảnh đại diện
-                                    TypeAccountText(supabase, user.id_type_account)
+                                    Text(
+                                        text = "Trạng thái: ${invoice.status}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+                                    Text(
+                                        text = "Ngày giao dịch: ${formatTransactionDate(invoice.transaction_date)}",
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
 
                                 }
                             }
@@ -223,26 +227,29 @@ fun AdminUsersScreen(
     }
 }
 
-@Composable
-fun TypeAccountText(supabase: SupabaseClient, id: Int) {
-    var typeAccount by remember { mutableStateOf<type_accounts?>(null) }
 
+@Composable
+fun UsersText(supabase: SupabaseClient, id: Int) {
+    // Lấy thông tin người dùng theo ID
+    var users by remember { mutableStateOf<Users?>(null) }
     LaunchedEffect(id) {
-        typeAccount = getTypeAccount(supabase, id)
+        users= getuserbyid(supabase, id)
     }
 
     Text(
-        text = "Loại tài khoản: ${typeAccount?.type ?: "Unknown"}",
+        text = "Họ và tên: ${users?.username ?: "Unknown"}",
         fontSize = 14.sp,
         modifier = Modifier.padding(bottom = 16.dp)
     )
+
 }
 
-suspend fun getTypeAccount(supabase: SupabaseClient, id: Int): type_accounts? {
-    val typeList = supabase.postgrest["type_accounts"]
-        .select {
-            filter { eq("id", id) }
+suspend fun getuserbyid(supabase: SupabaseClient, id: Int): Users?{
+    // Lấy thông tin người dùng theo ID
+    val userlist=supabase.postgrest["users"]
+        .select{
+            filter { eq("id",id) }
         }
-        .decodeList<type_accounts>()
-    return typeList.firstOrNull()
+        .decodeList<Users>()
+    return userlist.firstOrNull()
 }

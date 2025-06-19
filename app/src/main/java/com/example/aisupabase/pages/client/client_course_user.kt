@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.client
 
 import androidx.compose.foundation.background
 import com.example.aisupabase.R
@@ -45,21 +45,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
-import com.example.aisupabase.components.card_components.tagItem
-import com.example.aisupabase.controllers.BlogRepository
-import com.example.aisupabase.controllers.BlogResult
-import com.example.aisupabase.controllers.TagRepository
-import com.example.aisupabase.controllers.TagResult
-import com.example.aisupabase.models.Tags
+import com.example.aisupabase.components.card_components.CourseCard
+import com.example.aisupabase.controllers.CourseRepository
+import com.example.aisupabase.controllers.CourseResult
+import courses
 import kotlin.collections.plus
 
-class ClientTagViewModel(
-    private val tagRepository: TagRepository,
-    private val blogRepository: BlogRepository,
+class ClientCourseUserViewModel(
+    private val courseRepository: CourseRepository
 ):ViewModel()
 {
-    private val _tagList = MutableStateFlow<List<Tags>>(emptyList())
-    val tagList: StateFlow<List<Tags>> = _tagList
+    private val _courseList = MutableStateFlow<List<courses>>(emptyList())
+    val courseList: StateFlow<List<courses>> = _courseList
+
+    private val _courseListbyUser = MutableStateFlow<List<courses>>(emptyList())
+    val courseListbyUser: StateFlow<List<courses>> = _courseListbyUser
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -67,52 +67,46 @@ class ClientTagViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val _tagCounts = MutableStateFlow<Map<Int, Int>>(emptyMap())
-    val tagCounts: StateFlow<Map<Int, Int>> = _tagCounts
-
-    init {
-        fetchTag()
-    }
-
-    private fun fetchTag()
-    {
+    fun fetchCoursesByUser(id_user:Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = tagRepository.getTags()) {
-                is TagResult.Success -> _tagList.value = result.data ?: emptyList()
-                is TagResult.Error -> _error.value = result.exception.message
+            when (val result = courseRepository.getCourseByUserID(id_user)) {
+                is CourseResult.Success -> _courseListbyUser.value = result.data ?: emptyList()
+                is CourseResult.Error -> _error.value = result.exception.message
             }
             _isLoading.value = false
         }
     }
 
-    fun loadBlogConuntForTag(id:Int)
-    {
+
+    private val _processMap = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    val processMap: StateFlow<Map<Int, Double>> = _processMap
+
+    fun getProcess(id_user: Int, id_course: Int) {
         viewModelScope.launch {
-            when (val result = blogRepository.getBlogByTagID(id)) {
-                is BlogResult.Success -> {
-                    val count = result.data?.size ?: 0
-                    _tagCounts.value = _tagCounts.value + (id to count)
-                }
-                else -> { /* handle error if needed */ }
+            _isLoading.value = true
+            _error.value = null
+            when (val result = courseRepository.processCourse(id_user, id_course)) {
+                else -> _processMap.value = _processMap.value + (id_course to result)
             }
+            _isLoading.value = false
         }
     }
 }
 
 // view factory
-class ClientTagViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+class ClientCourseUserViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ClientTagViewModel::class.java)) {
-            return ClientTagViewModel(TagRepository(supabase), BlogRepository(supabase)) as T
+        if (modelClass.isAssignableFrom(ClientCourseUserViewModel::class.java)) {
+            return ClientCourseUserViewModel(CourseRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
 @Composable
-fun Client_Tag(navController: NavController) {
+fun Client_Course_User(navController: NavController) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val session = authUser().getUserSession(context)
@@ -125,25 +119,24 @@ fun Client_Tag(navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    ClientTagHomeView(navController,supabase)
-
+    ClientCourseUserHomeView(navController,supabase)
 }
 
 // CRUD view
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClientTagHomeView(
+fun ClientCourseUserHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: ClientTagViewModel = viewModel(factory = ClientTagViewModelFactory(supabase))
+    viewModel: ClientCourseUserViewModel = viewModel(factory =ClientCourseUserViewModelFactory(supabase))
 )
 {
-    val ListTag by viewModel.tagList.collectAsState()
-
+    val ListcoursesByUser by viewModel.courseListbyUser.collectAsState()
+    val processMap by viewModel.processMap.collectAsState()
     // thông tin user
     val context = LocalContext.current
     val session = authUser().getUserSession(context)
-
+    val id_user = session["id"]
     // bottom bar setup
     val routeToIndex = mapOf(
         "client_home" to 0,
@@ -157,11 +150,13 @@ fun ClientTagHomeView(
     val currentRoute = navBackStackEntry?.destination?.route
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
 
-    val tagCounts by viewModel.tagCounts.collectAsState()
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
     }
 
+    LaunchedEffect(id_user) {
+        viewModel.fetchCoursesByUser(id_user as Int)
+    }
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
@@ -206,7 +201,7 @@ fun ClientTagHomeView(
                 ) {
                     item(span = { GridItemSpan(2) }) {
                         Text(
-                            text = "Danh sách loại blog",
+                            text = "Danh sách khóa học",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -214,14 +209,14 @@ fun ClientTagHomeView(
                             modifier = Modifier.padding(bottom = 20.dp)
                         )
                     }
-
-                    items(ListTag) { tag ->
-                            val count = tagCounts[tag.id ] ?: 0
-                            LaunchedEffect(tag.id) {
-                                viewModel.loadBlogConuntForTag(tag.id )
-                            }
-                            tagItem(tag,count,navController)
+                            items(ListcoursesByUser) { course ->
+                                LaunchedEffect(course.id,id_user) {
+                                    viewModel.getProcess(id_user as Int,course.id ?: 0)
+                                }
+                                val process = processMap[course.id ?: 0] ?: 0.0
+                                CourseCard(course, process,navController)
                     }
+
                 }
             }
 

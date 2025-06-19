@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -60,7 +60,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.handle.isValidTitle
+import com.example.aisupabase.config.function_handle_public.isValidTitle
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.LessonRepository
@@ -74,6 +74,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import lessons
+import org.json.JSONObject
 
 
 // viewmodel
@@ -339,7 +340,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                             )
 
                                             val jsonLesson = try {
-                                                org.json.JSONObject(lesson.content_lesson)
+                                                JSONObject(lesson.content_lesson)
                                             } catch (e: Exception) {
                                                 null
                                             }
@@ -590,13 +591,13 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                             errorMsg = "Tiêu đề bài học đã tồn tại"
                                         } else {
                                             // tạo chuỗi json { } cho content_lessonAdd commentMore actions
-                                            val exampleObj = org.json.JSONObject()
+                                            val exampleObj = JSONObject()
                                             exampleObj.put("des_short", des_short)
                                             if(code != "") {
                                                 exampleObj.put("code", code)
                                             }
                                             // Create the main content_lesson object
-                                            val contentLessonObj = org.json.JSONObject()
+                                            val contentLessonObj = JSONObject()
                                             contentLessonObj.put("content_lession", content)
                                             contentLessonObj.put("example", exampleObj)
 
@@ -635,7 +636,7 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
 
         // Parse the content_lesson JSON to extract content and example
         val jsonLesson = try {
-            org.json.JSONObject(selected?.content_lesson ?: "{}")
+            JSONObject(selected?.content_lesson ?: "{}")
         } catch (e: Exception) {
             null
         }
@@ -820,13 +821,13 @@ fun LessionManagermentApp(supabase: SupabaseClient, viewModel: AdminLessonsViewM
                                         else
                                         {
                                             // tạo chuỗi json { } cho content_lesson
-                                            val exampleObj = org.json.JSONObject()
+                                            val exampleObj = JSONObject()
                                             exampleObj.put("des_short", des_short)
                                             if(code.isNotEmpty()) {
                                                 exampleObj.put("code", code)
                                             }
                                             // Create the main content_lesson object
-                                            val contentLessonObj = org.json.JSONObject()
+                                            val contentLessonObj = JSONObject()
                                             contentLessonObj.put("content_lession", content)
                                             contentLessonObj.put("example", exampleObj)
 

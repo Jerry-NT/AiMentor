@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -38,7 +38,7 @@ import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.example.aisupabase.config.handle.isValidTitle
+import com.example.aisupabase.config.function_handle_public.isValidTitle
 
 // Viewmodel sử dụng để quản lý trạng thái của danh sách tags -> CRUD operations
 class TagViewModel(private val repository: TagRepository) : ViewModel() {

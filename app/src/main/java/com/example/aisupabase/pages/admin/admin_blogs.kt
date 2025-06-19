@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -61,10 +61,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.ArrowBack
 import com.example.aisupabase.cloudinary.CloudinaryService
-import com.example.aisupabase.config.handle.formatTransactionDate
-import com.example.aisupabase.config.handle.getPublicIdFromUrl
-import com.example.aisupabase.config.handle.uriToFile
-import com.example.aisupabase.config.handle.isValidTitle
+import com.example.aisupabase.config.function_handle_public.formatTransactionDate
+import com.example.aisupabase.config.function_handle_public.getPublicIdFromUrl
+import com.example.aisupabase.config.function_handle_public.uriToFile
+import com.example.aisupabase.config.function_handle_public.isValidTitle
 import java.io.File
 
 //ViewModel for managing the state of blogs

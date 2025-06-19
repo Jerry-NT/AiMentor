@@ -1,11 +1,8 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.client
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,7 +33,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.handle.TagName
 import com.example.aisupabase.controllers.LearnRepository
 import com.example.aisupabase.controllers.LessonRepository
 import com.example.aisupabase.controllers.LessonResult
@@ -47,6 +43,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import lessons
+import org.json.JSONObject
 
 class lessonDetailViewModel(private val repository: LessonRepository, private val learnRepository: LearnRepository): ViewModel() {
     private val _lessonsList = MutableStateFlow<List<lessons>>(emptyList())
@@ -189,7 +186,7 @@ fun LessonDetailView(
                                 )
 
                                 val jsonLesson = try {
-                                    org.json.JSONObject(ListLesson[0].content_lesson)
+                                    JSONObject(ListLesson[0].content_lesson)
                                 } catch (e: Exception) {
                                     null
                                 }

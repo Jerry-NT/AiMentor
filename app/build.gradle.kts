@@ -1,10 +1,9 @@
-
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "2.1.21"
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -97,7 +96,7 @@ dependencies {
 
     // ktor
     implementation("io.ktor:ktor-client-android:3.0.0")
-
+    implementation("io.ktor:ktor-client-plugins:3.0.0")
     // Coil cho Jetpack Compose
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation ("com.cloudinary:cloudinary-android:3.0.2")
@@ -107,4 +106,6 @@ dependencies {
     coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.4")
 
     implementation ("androidx.work:work-runtime-ktx:2.9.0")
+    implementation ("com.google.guava:guava:32.1.2-android")
+
 }

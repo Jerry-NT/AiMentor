@@ -52,9 +52,13 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
                         eq("id_roadmap", id)
                     }
                 }.decodeList<courses>()
-            courseList.forEach { course ->
-                CourseRepository(supabase).deleteCourse(course.id?:0)
+            if(courseList.isNotEmpty())
+            {
+                courseList.forEach { course ->
+                    CourseRepository(supabase).deleteCourse(course.id?:0)
+                }
             }
+
 
             // Xóa roadmap theo id
             val result = supabase.postgrest["course_roadmaps"]
@@ -119,6 +123,22 @@ class RoadMapRepository(private val supabase: SupabaseClient) {
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext false
+        }
+    }
+
+    suspend fun getRoadMapTitle(title: String): RoadMapResult<List<course_roadmaps>> = withContext(Dispatchers.IO)  {
+        try {
+            val existingRoadMap = supabase.postgrest["course_roadmaps"]
+                .select {
+                    filter {
+                        ilike("title", title)
+                    }
+                }.decodeList<course_roadmaps>()
+
+            return@withContext RoadMapResult.Success(existingRoadMap)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext RoadMapResult.Error(e)
         }
     }
 }

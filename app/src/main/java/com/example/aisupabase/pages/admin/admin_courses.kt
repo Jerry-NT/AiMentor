@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,7 +41,7 @@ import coil.compose.AsyncImage
 import com.example.aisupabase.R
 import com.example.aisupabase.cloudinary.CloudinaryService
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.handle.getPublicIdFromUrl
+import com.example.aisupabase.config.function_handle_public.getPublicIdFromUrl
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.RoadMapRepository
@@ -67,9 +67,8 @@ import kotlin.collections.emptyList
 import kotlin.collections.find
 import kotlin.collections.forEach
 import kotlin.let
-import com.example.aisupabase.config.handle.isValidTitle
-import com.example.aisupabase.config.handle.uriToFile
-import kotlinx.coroutines.coroutineScope
+import com.example.aisupabase.config.function_handle_public.isValidTitle
+import com.example.aisupabase.config.function_handle_public.uriToFile
 import java.io.File
 
 // ViewModel quản lý state courses

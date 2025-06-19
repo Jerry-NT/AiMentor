@@ -11,19 +11,34 @@ import java.util.concurrent.TimeUnit
 
 object notification_crud {
 
-    private const val WORK_NAME = "daily_notification_work"
+    data class NotificationDetail(
+        val id: Int,
+        val title: String,
+        val message: String,
+        val hour: Int,
+        val minute: Int,
+        val state: String,
+        val tags: List<String>
+    )
 
     fun scheduleDailyNotification(
         context: Context,
         title: String,
         message: String,
         hour: Int,
-        minute: Int
+        minute: Int,
+        notificationId: Int = generateNotificationId()
     ) {
+        // Tạo unique work name cho mỗi thông báo
+        val workName = "daily_notification_${hour}"
+
         // Tạo input data cho Worker
         val inputData = Data.Builder()
             .putString("title", title)
             .putString("message", message)
+            .putInt("notificationId", notificationId)
+            .putInt("hour", hour)
+            .putInt("minute", minute)
             .build()
 
         // Tính toán thời gian delay cho lần chạy đầu tiên
@@ -36,16 +51,17 @@ object notification_crud {
             .setInputData(inputData)
             .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
             .addTag("daily_notification")
+            .addTag("notification_$notificationId")
             .build()
 
-        // Enqueue work với REPLACE policy để thay thế work cũ nếu có
+        // Enqueue work với KEEP policy để giữ lại các work khác
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            WORK_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE,
+            workName,
+            ExistingPeriodicWorkPolicy.KEEP,
             dailyWorkRequest
         )
-
-        showScheduleAlert(context, hour, minute, title, message)
+        saveNotificationInfo(context, notificationId, title, message, hour, minute, workName)
+        showScheduleAlert(context, hour, minute, title, message, notificationId)
     }
 
     fun scheduleOneTimeNotification(
@@ -71,14 +87,120 @@ object notification_crud {
         showAlert(context, futureTime, title, message)
     }
 
-    fun cancelDailyNotification(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-        showCancelAlert(context)
+    fun cancelDailyNotification(context: Context, notificationId: Int? = null) {
+        if (notificationId != null) {
+            // Hủy một thông báo cụ thể
+            WorkManager.getInstance(context).cancelAllWorkByTag("notification_$notificationId")
+            // Xóa thông tin khỏi SharedPreferences
+            removeNotificationInfo(context, notificationId)
+            showCancelAlert(context, "Thông báo #$notificationId đã được hủy")
+        } else {
+            // Hủy tất cả thông báo hằng ngày
+            WorkManager.getInstance(context).cancelAllWorkByTag("daily_notification")
+            // Xóa tất cả thông tin khỏi SharedPreferences
+            clearAllNotificationInfo(context)
+            showCancelAlert(context, "Tất cả thông báo hằng ngày đã được hủy")
+        }
+    }
+
+    fun getScheduledNotificationDetails(context: Context): List<NotificationDetail> {
+        return try {
+            val workInfos = WorkManager.getInstance(context)
+                .getWorkInfosByTag("daily_notification")
+                .get()
+
+            // Lấy thông tin từ SharedPreferences
+            val savedNotifications = getSavedNotificationInfo(context)
+
+            // Kết hợp WorkInfo với thông tin đã lưu
+            workInfos.mapNotNull { workInfo ->
+                // Tìm thông tin tương ứng từ SharedPreferences
+                val workTags = workInfo.tags
+                val notificationTag = workTags.find { it.startsWith("notification_") }
+                val notificationId = notificationTag?.substringAfter("notification_")?.toIntOrNull()
+
+                val savedInfo = savedNotifications.find { it.id == notificationId }
+                savedInfo?.let {
+                    NotificationDetail(
+                        id = it.id,
+                        title = it.title,
+                        message = it.message,
+                        hour = it.hour,
+                        minute = it.minute,
+                        state = workInfo.state.name,
+                        tags = workInfo.tags.toList()
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     fun cancelAllNotifications(context: Context) {
         WorkManager.getInstance(context).cancelAllWorkByTag("daily_notification")
         WorkManager.getInstance(context).cancelAllWorkByTag("one_time_notification")
+        clearAllNotificationInfo(context)
+        showCancelAlert(context, "Tất cả thông báo đã được hủy")
+    }
+
+    private fun generateNotificationId(): Int {
+        return (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+    }
+    // SharedPreferences methods
+    private fun saveNotificationInfo(
+        context: Context,
+        id: Int,
+        title: String,
+        message: String,
+        hour: Int,
+        minute: Int,
+        workName: String
+    ) {
+        val prefs = context.getSharedPreferences("scheduled_notifications", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+
+        val notificationData = "$id|$title|$message|$hour|$minute|$workName"
+        editor.putString("notification_$id", notificationData)
+        editor.apply()
+    }
+
+    private fun getSavedNotificationInfo(context: Context): List<NotificationDetail> {
+        val prefs = context.getSharedPreferences("scheduled_notifications", Context.MODE_PRIVATE)
+        val allPrefs = prefs.all
+
+        return allPrefs.mapNotNull { (key, value) ->
+            if (key.startsWith("notification_") && value is String) {
+                val id = key.substringAfter("notification_").toIntOrNull()
+                val parts = value.split("|")
+                // Correct mapping: id|title|message|hour|minute|workName
+                if (id != null && parts.size >= 6) {
+                    NotificationDetail(
+                        id = id,
+                        title = parts[1],
+                        message = parts[2],
+                        hour = parts[3].toIntOrNull() ?: 0,
+                        minute = parts[4].toIntOrNull() ?: 0,
+                        state = "SAVED",
+                        tags = emptyList()
+                    )
+                } else null
+            } else null
+        }
+    }
+
+    private fun removeNotificationInfo(context: Context, id: Int) {
+        val prefs = context.getSharedPreferences("scheduled_notifications", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        editor.remove("notification_$id")
+        editor.apply()
+    }
+
+    private fun clearAllNotificationInfo(context: Context) {
+        val prefs = context.getSharedPreferences("scheduled_notifications", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        editor.clear()
+        editor.apply()
     }
 
     private fun calculateInitialDelay(hour: Int, minute: Int): Long {
@@ -98,13 +220,14 @@ object notification_crud {
         return targetTime.timeInMillis - currentTime.timeInMillis
     }
 
-    private fun showScheduleAlert(context: Context, hour: Int, minute: Int, title: String, message: String) {
+    private fun showScheduleAlert(context: Context, hour: Int, minute: Int, title: String, message: String, notificationId: Int) {
         val timeString = String.format("%02d:%02d", hour, minute)
 
         AlertDialog.Builder(context)
             .setTitle("Thông báo hằng ngày đã được lên lịch")
             .setMessage(
-                "Tiêu đề: $title\n" +
+                "ID: #$notificationId\n" +
+                        "Tiêu đề: $title\n" +
                         "Nội dung: $message\n" +
                         "Thời gian: $timeString hằng ngày"
             )
@@ -128,10 +251,10 @@ object notification_crud {
             .show()
     }
 
-    private fun showCancelAlert(context: Context) {
+    private fun showCancelAlert(context: Context, message: String = "Thông báo đã được hủy") {
         AlertDialog.Builder(context)
             .setTitle("Đã hủy")
-            .setMessage("Thông báo hằng ngày đã được hủy")
+            .setMessage(message)
             .setPositiveButton("OK", null)
             .show()
     }

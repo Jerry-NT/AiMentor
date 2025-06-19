@@ -15,17 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aisupabase.models.Tags
-import com.example.aisupabase.models.Users
-import com.example.aisupabase.models.type_accounts
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.text.format
 
-object handle {
+object function_handle_public {
     // Hàm chuyển Uri thành File (tạm thời copy file vào cache)
     fun uriToFile(context: android.content.Context, uri: Uri): File? {
         return try {
@@ -66,8 +63,7 @@ object handle {
 
     fun isValidTitle(title: String): Boolean {
         val trimmed = title.trim() // Loại bỏ khoảng trắng đầu và cuối
-        val regex = Regex("^[a-zA-Z0-9\\sÀ-ỹ]+$") // Chỉ cho phép chữ cái, số, khoảng trắng và ký tự tiếng Việt
-        return trimmed.isNotEmpty() && trimmed == title && regex.matches(title)
+        return trimmed.isNotEmpty() && trimmed == title
     }
 
     fun formatTransactionDate(dateString: String): String {
@@ -80,7 +76,6 @@ object handle {
             dateString // fallback if parsing fails
         }
     }
-
 
     @Composable
     fun TagName(supabase: SupabaseClient, id: Int) {

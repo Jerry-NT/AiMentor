@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "435562284457",
+    "project_id": "supabase-ai",
+    "storage_bucket": "supabase-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:435562284457:android:5057f14e37bb9e620430b8",
+        "android_client_info": {
+          "package_name": "com.example.aisupabase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSesW8tqw176NJsA9_zO5a6hZaE-dCvH8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

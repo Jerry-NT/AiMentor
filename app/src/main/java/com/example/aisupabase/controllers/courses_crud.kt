@@ -64,6 +64,7 @@ class CourseRepository(private val supabase: SupabaseClient) {
             }
 
             val coursesList = result.decodeList<courses>()
+
             return@withContext CourseResult.Success(coursesList, result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
@@ -94,13 +95,19 @@ class CourseRepository(private val supabase: SupabaseClient) {
         is_private: Boolean,
         user_create: Int,
         id_roadmap: Int
-    ): CourseResult<Unit> = withContext(Dispatchers.IO) {
+    ): CourseResult<courses> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["courses"]
                 .insert(
                     courses(null,title_course, des_course, public_id_image,url_image, is_private,id_roadmap, user_create, now().toString())
-                )
-            return@withContext CourseResult.Success(Unit, result)
+                ){
+                    select()
+                }
+
+            val inserted = result.decodeSingle<courses>()
+            Log.d("AddCourse", " Data: ${result.data}")
+
+            return@withContext CourseResult.Success(inserted,result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)
         }
@@ -137,9 +144,11 @@ class CourseRepository(private val supabase: SupabaseClient) {
             val comments = supabase.postgrest["comment_course"].select{
                 filter { eq("id_course", id) }
             }.decodeList<comment_course>()
-            comments.forEach { comment ->
+            if(comments.isNotEmpty()) {
+                comments.forEach { comment ->
                     supabase.from("comment_course").delete {
-                        filter { eq("id", comment.id?:0) }
+                        filter { eq("id", comment.id ?: 0) }
+                    }
                 }
             }
 
@@ -147,9 +156,12 @@ class CourseRepository(private val supabase: SupabaseClient) {
             val userCourses = supabase.postgrest["user_course"].select{
                 filter { eq("id_course", id) }
             }.decodeList<courses>()
-            userCourses.forEach { userCourse ->
+            if(userCourses.isNotEmpty())
+            {
+                userCourses.forEach { userCourse ->
                     supabase.from("user_course").delete {
                         filter { eq("id", userCourse.id ?: 0) }
+                    }
                 }
             }
 
@@ -157,13 +169,18 @@ class CourseRepository(private val supabase: SupabaseClient) {
             val lessonCourses = supabase.postgrest["lesson_course"].select{
                 filter { eq("id_course", id) }
             }.decodeList<lessons>()
-            lessonCourses.forEach { lessonCourse ->
+
+            if(lessonCourses.isNotEmpty())
+            {
+                lessonCourses.forEach { lessonCourse ->
                     LessonRepository(supabase).deleteLesson(id)
+                }
             }
 
             val result = supabase.from("courses").delete {
                 filter { eq("id", id) }
             }
+
             return@withContext CourseResult.Success(Unit, result)
         } catch (e: Exception) {
             return@withContext CourseResult.Error(e)

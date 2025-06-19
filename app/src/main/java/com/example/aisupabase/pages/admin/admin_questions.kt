@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -69,8 +69,8 @@ import androidx.compose.ui.window.Dialog
 import com.example.aisupabase.R
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
-import com.example.aisupabase.config.handle.isValidTitle
-import com.example.aisupabase.models.type_accounts
+import com.example.aisupabase.config.function_handle_public.isValidTitle
+import org.json.JSONObject
 
 //viewmodels
 class questionViewModel(private val repository: questionRepositon): ViewModel(){
@@ -290,7 +290,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                                         )
                                     } else {
                                         val options = try {
-                                            org.json.JSONObject(question.option)
+                                            JSONObject(question.option)
                                         } catch (e: Exception) {
                                             null
                                         }
@@ -520,7 +520,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                                             check = false
                                         } else {
                                             if (selectedTypeOption == question_option_type.abcd) {
-                                                val options = org.json.JSONObject()
+                                                val options = JSONObject()
                                                 options.put("A", answerA)
                                                 options.put("B", answerB)
                                                 options.put("C", answerC)
@@ -577,7 +577,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                 LaunchedEffect(selected) {
                     if (selected?.type_option == question_option_type.abcd) {
                         val options = try {
-                            org.json.JSONObject(selected?.option ?: "")
+                            JSONObject(selected?.option ?: "")
                         } catch (e: Exception) {
                             null
                         }
@@ -751,7 +751,7 @@ fun question_app(supabase: SupabaseClient, viewModel: questionViewModel = viewMo
                                             hasError = false
                                         } else {
                                             if (selectedTypeOption == question_option_type.abcd) {
-                                                val options = org.json.JSONObject()
+                                                val options = JSONObject()
                                                 options.put("A", answerA)
                                                 options.put("B", answerB)
                                                 options.put("C", answerC)

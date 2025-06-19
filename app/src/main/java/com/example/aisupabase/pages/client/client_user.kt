@@ -1,7 +1,9 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.client
 
 import UserRepository
+import android.util.Patterns
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -115,6 +118,13 @@ class userViewModelFactory(private val supabase: SupabaseClient): ViewModelProvi
     }
 }
 
+data class SettingsItem(
+    val title: String,
+    val icon: ImageVector,
+    val isDestructive: Boolean = false,
+    val onClick: () -> Unit = {}
+)
+
 @Composable
 fun Client_User(navController: NavController) {
     val context = LocalContext.current
@@ -131,20 +141,13 @@ fun Client_User(navController: NavController) {
     val supabase = SupabaseClientProvider.client
     UserHomeView(navController,supabase)
 }
-data class SettingsItem(
-    val title: String,
-    val icon: ImageVector,
-    val isDestructive: Boolean = false,
-    val onClick: () -> Unit = {}
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: ClientUserViewModel = viewModel(factory = userViewModelFactory(supabase)
-))
+    viewModel: ClientUserViewModel = viewModel(factory = userViewModelFactory(supabase)))
     {
         val context = LocalContext.current
         val session = authUser().getUserSession(context)
@@ -152,9 +155,6 @@ fun UserHomeView(
         val imageName = "avatar_" + (indexImage?.toString() ?: "")
         val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
         val imageResId = if (resId != 0) resId else R.drawable.background
-
-        var showTimeDialog by remember { mutableStateOf(false) }
-        var pickedTime by remember { mutableStateOf<LocalTime?>(null) }
         var showUpdateDialog by remember { mutableStateOf(false) }
 
         val settingsItems = listOf(
@@ -171,7 +171,16 @@ fun UserHomeView(
             SettingsItem(
                 title = "Đặt lịch nhắc hẹn",
                 icon = Icons.Default.Notifications,
-                onClick = { showTimeDialog = true }
+                onClick = {
+
+                    navController.navigate("client_noti")
+                }
+            ),
+            SettingsItem(
+                title = "Đổi mật khẩu",
+                icon = Icons.Default.Edit,
+                isDestructive = true,
+                onClick = { /* Handle account deletion */ }
             ),
             SettingsItem(
                 title = "Đăng xuất",
@@ -183,15 +192,8 @@ fun UserHomeView(
                         popUpTo("client_home") { inclusive = true }
                     }
                 }
-            ),
-            SettingsItem(
-                title = "Đổi mật khẩu",
-                icon = Icons.Default.Edit,
-                isDestructive = true,
-                onClick = { /* Handle account deletion */ }
             )
         )
-
         val routeToIndex = mapOf(
             "client_home" to 0,
             "client_course" to 1,
@@ -220,14 +222,16 @@ fun UserHomeView(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0x994C1D95),
+                                Color(0x996366F1),
+                                Color(0x9972658F),
+                            )
+                        )
+                    )
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.client_background),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    alpha = 1f
-                )
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -269,7 +273,6 @@ fun UserHomeView(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.Black
                                 )
-
                                 Spacer(modifier = Modifier.height(8.dp))
 
                              //    Phone Number
@@ -278,16 +281,13 @@ fun UserHomeView(
                                     fontSize = 14.sp,
                                     color = Color.Gray
                                 )
-
                                 Spacer(modifier = Modifier.height(4.dp))
-
                                 // Email
                                 Text(
                                     text = "${session["email"]}",
                                     fontSize = 14.sp,
                                     color = Color.Gray
                                 )
-
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Surface(
                                     shape = RoundedCornerShape(20.dp),
@@ -305,7 +305,6 @@ fun UserHomeView(
                             }
                         }
                     }
-
                     // list action
                     items(settingsItems.size) { index ->
                         val item = settingsItems[index]
@@ -316,8 +315,6 @@ fun UserHomeView(
                     }
                 }
             }
-
-
         }
         // ham cap nhap thong tin ca nhan
         if(showUpdateDialog)
@@ -452,7 +449,7 @@ fun UserHomeView(
                                         valid = false
                                     }
 
-                                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                                    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                                         emailError = "Email không hợp lệ"
                                         valid = false
                                     }
@@ -499,18 +496,6 @@ fun UserHomeView(
                 }
             }
         }
-
-        if (showTimeDialog) {
-            TimePickerDialog(
-                onDismissRequest = { showTimeDialog = false },
-                onTimeSelected = { time -> // lưu giờ người dùng chọn
-                    showTimeDialog = false
-                    createNotificationChannel(context)
-                    scheduleDailyNotification(context,"tieu de","message",time.hour,time.minute)
-                }
-            )
-        }
-
     }
 
 @Composable
@@ -570,42 +555,4 @@ fun SettingsItemCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TimePickerDialog(
-    onDismissRequest: () -> Unit,
-    onTimeSelected: (LocalTime) -> Unit
-) {
-    val timeState = rememberTimePickerState(is24Hour = true)   // 24 h, đổi thành false nếu muốn 12 h
 
-    Dialog(onDismissRequest = onDismissRequest) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TimePicker(state = timeState)
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    OutlinedButton(onClick = onDismissRequest) {
-                        Text("Hủy")
-                    }
-                    Button(onClick = {
-                        val picked = LocalTime(timeState.hour, timeState.minute)
-                        onTimeSelected(picked)
-                    }) {
-                        Text("Xác nhận")
-                    }
-                }
-            }
-        }
-    }
-}

@@ -1,10 +1,11 @@
 package com.example.aisupabase.config
 
 import com.cloudinary.Cloudinary
-import com.cloudinary.android.MediaManager
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+
+
 
 object NativeKeys {
     init {
@@ -36,3 +37,4 @@ object CloudinaryClientProvider {
 
     fun getCloudinaryInstance() = Cloudinary(config)
 }
+

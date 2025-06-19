@@ -1,5 +1,6 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.client
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -52,7 +54,7 @@ import androidx.navigation.NavController
 import blogs
 import coil.compose.AsyncImage
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.handle.TagName
+import com.example.aisupabase.config.function_handle_public.TagName
 import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.controllers.authUser
@@ -110,11 +112,10 @@ fun Blog_Detail(navController: NavController,id:Int)
             navController.navigate("login");
         }
     }
-
     val supabase = SupabaseClientProvider.client
     BlogDetailView(id,navController,supabase)
-
 }
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun BlogDetailView(
@@ -179,7 +180,7 @@ fun BlogDetailView(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(
-                                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    brush = Brush.verticalGradient(
                                         colors = listOf(
                                             Color.Transparent,
                                             Color.Black.copy(alpha = 0.7f)
@@ -279,7 +280,7 @@ fun BlogDetailView(
                                 Surface(
                                     shape = RoundedCornerShape(20.dp),
                                     color = Color(0xFF4ECDC4).copy(alpha = 0.1f),
-                                    border = androidx.compose.foundation.BorderStroke(
+                                    border = BorderStroke(
                                         1.dp,
                                         Color(0xFF4ECDC4).copy(alpha = 0.3f)
                                     )

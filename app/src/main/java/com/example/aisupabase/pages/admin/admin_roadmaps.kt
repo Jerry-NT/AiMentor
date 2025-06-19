@@ -1,4 +1,4 @@
-package com.example.aisupabase.pages
+package com.example.aisupabase.pages.admin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -55,21 +55,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.controllers.TypeAccountRepository
-import com.example.aisupabase.controllers.TypeAccountResult
+import com.example.aisupabase.controllers.RoadMapRepository
+import com.example.aisupabase.controllers.RoadMapResult
 import com.example.aisupabase.controllers.authUser
-import com.example.aisupabase.models.type_accounts
 import com.example.aisupabase.ui.theme.Blue
 import com.example.aisupabase.ui.theme.Red
+import course_roadmaps
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.example.aisupabase.config.handle.isValidTitle
-// view model
-class TypeAccountsViewModel (private val repository: TypeAccountRepository):ViewModel() {
-    private val _typeAccountsList = MutableStateFlow<List<type_accounts>>(emptyList())
-    val typeAccountsList: StateFlow<List<type_accounts>> = _typeAccountsList
+import com.example.aisupabase.config.function_handle_public.isValidTitle
+// viewmodels
+class RoadMapViewModel (private val repository: RoadMapRepository): ViewModel(){
+    private val _roadmapList = MutableStateFlow<List<course_roadmaps>>(emptyList())
+    val roadmapList: StateFlow<List<course_roadmaps>> = _roadmapList
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -77,90 +77,79 @@ class TypeAccountsViewModel (private val repository: TypeAccountRepository):View
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    init {
-        getTypeAccounts()
+    init{
+        getRoadMaps()
     }
-
-    fun getTypeAccounts()
-    {
-        viewModelScope.launch {
-            viewModelScope.launch {
-                _isLoading.value = true
-                _error.value = null
-                when (val result = repository.getTypeAccounts()) {
-                    is TypeAccountResult.Success -> _typeAccountsList.value = result.data ?: emptyList()
-                    is TypeAccountResult.Error -> {
-                        _error.value = result.exception.message
-                    }
-                }
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun deleteTypeAccount(typeAccount: type_accounts) {
+    fun getRoadMaps() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.deleteTypeAccount(typeAccount.id ?: 0)) {
-                is TypeAccountResult.Success -> getTypeAccounts() // Refresh the list after deletion
-                is TypeAccountResult.Error -> {
-                    _error.value = result.exception.message
-                }
+            when (val result = repository.getRoadMaps()) {
+                is RoadMapResult.Success -> _roadmapList.value = result.data ?: emptyList()
+                is RoadMapResult.Error -> _error.value = "Failed to load roadmaps: ${result.exception.message}"
             }
             _isLoading.value = false
         }
     }
 
-    fun updateTypeAccount(typeAccount: type_accounts, type: String, des: String, max_course: Int, price: Double) {
+    fun removeRoadMap(roadmap: course_roadmaps) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.updateTypeAccount(typeAccount.id ?:0, type, des, max_course, price)) {
-                is TypeAccountResult.Success -> getTypeAccounts() // Refresh the list after update
-                is TypeAccountResult.Error -> {
-                    _error.value = result.exception.message
-                }
+            when (val result = repository.deleteRoadMap(roadmap.id ?:0)) {
+                is RoadMapResult.Success -> getRoadMaps()
+                is RoadMapResult.Error -> _error.value = "Failed to delete roadmap: ${result.exception.message}"
             }
             _isLoading.value = false
         }
     }
 
-    fun addTypeAccount(type: String, des: String, max_course: Int, price: Double) {
+    fun updateRoadMap(id: Int, title: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.addTypeAccount(type, des, max_course, price)) {
-                is TypeAccountResult.Success -> getTypeAccounts() // Refresh the list after addition
-                is TypeAccountResult.Error -> {
-                    _error.value = result.exception.message
-                }
+            when (val result = repository.updateRoadMap(id, title)) {
+                is RoadMapResult.Success -> getRoadMaps()
+                is RoadMapResult.Error -> _error.value = "Failed to update roadmap: ${result.exception.message}"
             }
             _isLoading.value = false
         }
     }
 
-    fun checkTypeExists(type: String, case: String = "add", id: Int? = null, onResult: (Boolean) -> Unit) {
+    fun addRoadMap(title: String) {
         viewModelScope.launch {
-            val exists = repository.checkTypeAccount(type,case,id)
+            _isLoading.value = true
+            _error.value = null
+            when (val result = repository.addRoadMap(title)) {
+                is RoadMapResult.Success -> getRoadMaps()
+                is RoadMapResult.Error -> _error.value  = "Failed to add roadmap: ${result.exception.message}"
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun checkRoadMapExists(title: String,case:String = "add",id:Int? = null,onResult: (Boolean)-> Unit) {
+        viewModelScope.launch {
+            val exists = repository.checkRoadMapExists(title, case, id)
             onResult(exists)
         }
     }
 }
 
-// ViewModel Factory
-class TypeAccountsViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+// viewnodel factory
+class RoadMapViewModelFactory(private val repository: RoadMapRepository) :ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(TypeAccountsViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(RoadMapViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TypeAccountsViewModel(TypeAccountRepository(supabase)) as T
+            return RoadMapViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+
 //  Main Activity
 @Composable
-fun Admin_Type_Accounts( navController: NavController) {
+fun Admin_Roadmaps( navController: NavController) {
     // xử lý logic xác thực người dùng, kiểm tra quyền truy cập, v.v.
     val context = LocalContext.current
     LaunchedEffect(Unit) {
@@ -174,22 +163,23 @@ fun Admin_Type_Accounts( navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    typeAccountManagementApp(supabase = supabase, navController = navController)
+    RoadMapManagementApp(supabase = supabase, navController = navController)
 }
+// Validation function for  title
 
-// crud view
+// CRUD  ViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsViewModel = viewModel(factory = TypeAccountsViewModelFactory (supabase)),
-                             navController: NavController ){
+fun RoadMapManagementApp(supabase: SupabaseClient, viewModel: RoadMapViewModel = viewModel(factory = RoadMapViewModelFactory(RoadMapRepository(supabase))),
+                         navController: NavController) {
+    val roadmaps by viewModel.roadmapList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val typeAccountsList by viewModel.typeAccountsList.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var selected by remember { mutableStateOf<type_accounts?>(null) }
+    var selectedRoadMap by remember { mutableStateOf<course_roadmaps?>(null) }
 
     Scaffold(
         topBar = {
@@ -208,17 +198,17 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm loaại tài khoản", color = Color.White)
+                        Text("Thêm lộ trình", color = Color.White)
                     }
                 }
             )
         }
-    ){paddingValues ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ){
+        ) {
             Image(
                 painter = painterResource(id = R.drawable.background),
                 contentDescription = "Background",
@@ -226,8 +216,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                 contentScale = ContentScale.Crop,
                 alpha = 0.5f
             )
-
-            when{
+            when {
                 // xử lý trạng thái loading
                 isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 error != null -> {
@@ -243,18 +232,18 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                             color = Color.Red,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
-                        Button(onClick = { viewModel.getTypeAccounts() }) { Text("Retry") }
+                        Button(onClick = { viewModel.getRoadMaps() }) { Text("Retry") }
                     }
                 }
-
-                else ->{
+                // render danh sách
+                else -> {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ){
-                        itemsIndexed(typeAccountsList) { index, TA ->
+                    ) {
+                        itemsIndexed(roadmaps) { index, roadmap ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -277,28 +266,11 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
 
                                     // Tiêu đề
                                     Text(
-                                        text = "Loại tài khoản: ${TA.type}",
+                                        text = "Tiêu đề: ${roadmap.title}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
 
-                                    Text(
-                                        text = "Mô tả: ${TA.des}",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
-
-                                    Text(
-                                        text = "Số khóa học tối đa: ${TA.max_course}",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
-
-                                    Text(
-                                        text = "Giá: ${TA.price} VNĐ",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
                                     // Thao tác
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -306,7 +278,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                                     ) {
                                         Button(
                                             onClick = {
-                                                selected = TA
+                                                selectedRoadMap = roadmap
                                                 showUpdateDialog = true
                                             },
                                             colors = ButtonDefaults.buttonColors(containerColor = Blue),
@@ -317,7 +289,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
 
                                         Button(
                                             onClick = {
-                                                selected = TA
+                                                selectedRoadMap = roadmap
                                                 showDeleteDialog = true
                                             },
                                             colors = ButtonDefaults.buttonColors(containerColor = Red),
@@ -335,7 +307,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
         }
     }
 
-    // dialog add
+    // Add Dialog
     if (showAddDialog) {
         Dialog(onDismissRequest = { showAddDialog = false }) {
             Card(
@@ -344,17 +316,9 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                     .padding(16.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                var typeAccount by remember { mutableStateOf("") }
+                var roadmapTitle by remember { mutableStateOf("") }
                 var errorMsg by remember { mutableStateOf<String?>(null) }
 
-                var desAccount by remember { mutableStateOf("") }
-                var erroDesMsg by remember { mutableStateOf<String?>(null) }
-
-                var max_course_Account by remember { mutableStateOf("") }
-                var erromax_course_AccountMsg by remember { mutableStateOf<String?>(null) }
-
-                var price_Account by remember { mutableStateOf("") }
-                var error_price_Msg by remember { mutableStateOf<String?>(null) }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -365,84 +329,30 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Thêm loại tài khoản", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Thêm tag", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showAddDialog = false }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // Nhập loại tài khoản
                     Text(
-                        "Loại tài khoản",
+                        "Tiêu đề",
                         fontSize = 14.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
-                        value = typeAccount,
+                        value = roadmapTitle,
                         onValueChange = {
-                            typeAccount = it
+                            roadmapTitle = it
                             errorMsg = null
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập loại tài khoản") },
+                        placeholder = { Text("Nhập tiêu đề") },
                         singleLine = true,
                         isError = errorMsg != null
                     )
                     if (errorMsg != null) {
                         Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // des tai khoan
-                    OutlinedTextField(
-                        value = desAccount,
-                        onValueChange = {
-                            desAccount = it
-                            erroDesMsg = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập mô tả") },
-                        singleLine = true,
-                        isError = erroDesMsg != null
-                    )
-                    if (erroDesMsg != null) {
-                        Text(erroDesMsg!!, color = Color.Red, fontSize = 12.sp)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    //max course
-                    OutlinedTextField(
-                        value = max_course_Account,
-                        onValueChange = {
-                            max_course_Account = it
-                            erromax_course_AccountMsg = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập số lượng khóa học") },
-                        singleLine = true,
-                        isError = erromax_course_AccountMsg != null
-                    )
-                    if (erromax_course_AccountMsg != null) {
-                        Text(erromax_course_AccountMsg!!, color = Color.Red, fontSize = 12.sp)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    //price
-                    OutlinedTextField(
-                        value = price_Account,
-                        onValueChange = {
-                            price_Account = it
-                            error_price_Msg = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập giá") },
-                        singleLine = true,
-                        isError = error_price_Msg != null
-                    )
-
-                    if (error_price_Msg != null) {
-                        Text(error_price_Msg!!, color = Color.Red, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
@@ -451,46 +361,29 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                     ) {
                         Button(
                             onClick = {
-                                var hasError = false
-                                if (!isValidTitle(typeAccount.trim())) {
+                                var check = true
+                                if (!isValidTitle(roadmapTitle)) {
                                     errorMsg =
-                                        "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                        "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                if(typeAccount.length>150){
-                                    errorMsg = "Loại tài khoản không được quá 150 ký tự"
-                                    hasError = true
+
+                                if(roadmapTitle.length > 150)
+                                {
+                                    errorMsg = "Tiêu đề không được quá 150 ký tự"
+                                    check = false
                                 }
-                                if (!isValidTitle(desAccount)) {
-                                    erroDesMsg =
-                                        "Mô tả không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (desAccount.length > 150) {
-                                    erroDesMsg = "Mô tả không được quá 150 ký tự"
-                                    hasError = true
-                                }
-                                val maxCourse = max_course_Account.toIntOrNull()
-                                if (max_course_Account.isEmpty() || maxCourse == null || maxCourse < 0) {
-                                    erromax_course_AccountMsg = "Số khóa học tối đa không hợp lệ"
-                                    hasError = true
-                                }
-                                val price = price_Account.toDoubleOrNull()
-                                if (price_Account.isEmpty() || price == null || price < 0) {
-                                    error_price_Msg = "Giá không hợp lệ"
-                                    hasError = true
-                                }
-                                if (!hasError) {
-                                    viewModel.checkTypeExists(typeAccount) { exists ->
+
+                                if (check) {
+                                    viewModel.checkRoadMapExists(roadmapTitle) { exists ->
                                         if (exists) {
-                                            errorMsg = "Loại tai khoan đã tồn tại"
-                                        } else
-                                        {
-                                            viewModel.addTypeAccount(typeAccount, desAccount, maxCourse!!, price!!)
+                                            errorMsg = "Lộ trình đã tồn tại"
+                                            check = false
+                                        } else {
+                                            viewModel.addRoadMap(roadmapTitle.trim())
                                             showAddDialog = false
                                         }
                                     }
-
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -506,8 +399,8 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
         }
     }
 
-    // dialog update
-    if (showUpdateDialog && selected != null) {
+    // Update Dialog
+    if (showUpdateDialog && selectedRoadMap != null) {
         Dialog(onDismissRequest = { showUpdateDialog = false }) {
             Card(
                 modifier = Modifier
@@ -515,16 +408,8 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                     .padding(16.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                // All fields as String for TextField compatibility
-                var typeAccount by remember { mutableStateOf(selected!!.type) }
-                var desAccount by remember { mutableStateOf(selected!!.des) }
-                var max_course_Account by remember { mutableStateOf(selected!!.max_course.toString()) }
-                var price_Account by remember { mutableStateOf(selected!!.price.toString()) }
-
+                var roadmapTitle by remember { mutableStateOf(selectedRoadMap!!.title) }
                 var errorMsg by remember { mutableStateOf<String?>(null) }
-                var erroDesMsg by remember { mutableStateOf<String?>(null) }
-                var erromax_course_AccountMsg by remember { mutableStateOf<String?>(null) }
-                var error_price_Msg by remember { mutableStateOf<String?>(null) }
 
                 Column(
                     modifier = Modifier
@@ -536,75 +421,29 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Cập nhập loại tài khoản", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Cập nhập tag", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showUpdateDialog = false }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    // Loại tài khoản
-                    Text("Loại tài khoản", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text(
+                        "Tiêu đề",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     OutlinedTextField(
-                        value = typeAccount,
+                        value = roadmapTitle,
                         onValueChange = {
-                            typeAccount = it
+                            roadmapTitle = it
                             errorMsg = null
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập loại tài khoản") },
                         singleLine = true,
                         isError = errorMsg != null
                     )
                     if (errorMsg != null) {
                         Text(errorMsg!!, color = Color.Red, fontSize = 12.sp)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Mô tả
-                    OutlinedTextField(
-                        value = desAccount,
-                        onValueChange = {
-                            desAccount = it
-                            erroDesMsg = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập mô tả") },
-                        singleLine = true,
-                        isError = erroDesMsg != null
-                    )
-                    if (erroDesMsg != null) {
-                        Text(erroDesMsg!!, color = Color.Red, fontSize = 12.sp)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Số lượng khóa học
-                    OutlinedTextField(
-                        value = max_course_Account,
-                        onValueChange = {
-                            max_course_Account = it
-                            erromax_course_AccountMsg = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập số lượng khóa học") },
-                        singleLine = true,
-                        isError = erromax_course_AccountMsg != null
-                    )
-                    if (erromax_course_AccountMsg != null) {
-                        Text(erromax_course_AccountMsg!!, color = Color.Red, fontSize = 12.sp)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Giá
-                    OutlinedTextField(
-                        value = price_Account,
-                        onValueChange = {
-                            price_Account = it
-                            error_price_Msg = null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập giá") },
-                        singleLine = true,
-                        isError = error_price_Msg != null
-                    )
-                    if (error_price_Msg != null) {
-                        Text(error_price_Msg!!, color = Color.Red, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                     Row(
@@ -613,49 +452,29 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                     ) {
                         Button(
                             onClick = {
-                                var hasError = false
-                                if (!isValidTitle(typeAccount.trim())) {
-                                    errorMsg = "Loại tài khoản không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
+                                var check = true
+                                if (!isValidTitle(roadmapTitle)) {
+                                    errorMsg =
+                                        "Tiêu đề không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
+                                    check = false
                                 }
-                                if (typeAccount.length > 150) {
-                                    errorMsg = "Loại tài khoản không được quá 150 ký tự"
-                                    hasError = true
+                                if(roadmapTitle.length > 150)
+                                {
+                                    errorMsg = "Tiêu đề không được quá 150 ký tự"
+                                    check = false
                                 }
-                                if (!isValidTitle(desAccount.trim())) {
-                                    erroDesMsg = "Mô tả không hợp lệ (không rỗng, không dư khoảng trắng, không ký tự đặc biệt)"
-                                    hasError = true
-                                }
-                                if (desAccount.length > 150) {
-                                    erroDesMsg = "Mô tả không được quá 150 ký tự"
-                                    hasError = true
-                                }
-                                val maxCourse = max_course_Account.toIntOrNull()
-                                if (max_course_Account.isEmpty() || maxCourse == null || maxCourse < 0) {
-                                    erromax_course_AccountMsg = "Số khóa học tối đa không hợp lệ"
-                                    hasError = true
-                                }
-                                val price = price_Account.toDoubleOrNull()
-                                if (price_Account.isEmpty() || price == null || price < 0) {
-                                    error_price_Msg = "Giá không hợp lệ"
-                                    hasError = true
-                                }
-                                if (!hasError) {
-                                    viewModel.checkTypeExists(typeAccount,"update",selected?.id) { exists ->
+                                if (check) {
+                                    viewModel.checkRoadMapExists(roadmapTitle,"update",selectedRoadMap!!.id) { exists ->
                                         if (exists) {
-                                            errorMsg = "Tiêu đề đã tồn tại"
-                                        } else{
-                                            viewModel.updateTypeAccount(
-                                                selected!!,
-                                                typeAccount,
-                                                desAccount,
-                                                maxCourse!!,
-                                                price!!
-                                            )
-                                            showUpdateDialog = false
+                                            errorMsg = "Lộ trình đã tồn tại"
+                                            check = false
+                                        } else {
+                                            viewModel.updateRoadMap(
+                                                selectedRoadMap!!.id ?: 0,
+                                                roadmapTitle.trim())
+                                            showAddDialog = false
                                         }
                                     }
-
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -671,8 +490,8 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
         }
     }
 
-    //dialog xóa
-    if (showDeleteDialog && selected != null) {
+    // Delete Dialog
+    if (showDeleteDialog && selectedRoadMap != null) {
         Dialog(onDismissRequest = { showDeleteDialog = false }) {
             Card(
                 modifier = Modifier
@@ -703,7 +522,7 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
                     ) {
                         Button(
                             onClick = {
-                                selected?.let { viewModel.deleteTypeAccount(it) }
+                                selectedRoadMap?.let { viewModel.removeRoadMap(it) }
                                 showDeleteDialog = false
                             },
                             modifier = Modifier.weight(1f),
@@ -718,5 +537,4 @@ fun typeAccountManagementApp(supabase: SupabaseClient, viewModel: TypeAccountsVi
             }
         }
     }
-
 }

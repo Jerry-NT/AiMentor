@@ -1,5 +1,6 @@
-package com.example.aisupabase.pages
-
+package com.example.aisupabase.pages.admin
+import UserRepository
+import UserResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -45,49 +46,49 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.handle.formatTransactionDate
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
-import invoices
-import invoicesRepository
+import com.example.aisupabase.models.type_accounts
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
-class InvoiceViewModel(private val repository: invoicesRepository) : ViewModel() {
-    private val _invoices = MutableStateFlow<List<invoices>>(emptyList())
-    val invoicelist:StateFlow<List<invoices>> = _invoices
+//viewmodel
+class UserViewModel(private val repository: UserRepository) : ViewModel() {
+    private val _users = MutableStateFlow<List<Users>>(emptyList())
+    val userlist: StateFlow<List<Users>> = _users
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
-    // Khởi tạo dữ liệu hóa đơn
+
+    // Khởi tạo dữ liệu người dùng
     init {
-        getInvoices()
+        getUsers()
     }
-    fun getInvoices() {
+
+   fun getUsers() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
-            when (val result = repository.getInvoice()) {
-                is InvoiceResult.Success -> _invoices.value = result.data ?: emptyList()
-                is InvoiceResult.Error -> _error.value = "Failed to load tags: ${result.exception.message}"
-                else ->{}
+            when (val result = repository.getUsers()) {
+                is UserResult.Success -> _users.value = result.data ?: emptyList()
+                is UserResult.Error -> _error.value = "Failed to load tags: ${result.exception.message}"
             }
             _isLoading.value = false
         }
     }
 }
-class InvoiceViewModelFactory(private val supabase: SupabaseClient): ViewModelProvider.Factory{
-    override fun <T: ViewModel>create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(InvoiceViewModel::class.java)) {
-            return InvoiceViewModel(invoicesRepository(supabase)) as T
+
+
+class UserViewModelFactoryT(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
+            return UserViewModel(UserRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -95,7 +96,8 @@ class InvoiceViewModelFactory(private val supabase: SupabaseClient): ViewModelPr
 
 //  Main Activity
 @Composable
-fun Admin_User_Invoids(navController: NavController) {
+fun Admin_Users( navController: NavController) {
+    // xử lý logic xác thực người dùng, kiểm tra quyền truy cập, v.v.
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         val session = authUser().getUserSession(context)
@@ -103,26 +105,24 @@ fun Admin_User_Invoids(navController: NavController) {
         val username = session["username"] as? String
         if (username == null || role != "admin") {
             authUser().clearUserSession(context)
-            navController.navigate("login")
+            navController.navigate("login");
         }
     }
 
     val supabase = SupabaseClientProvider.client
-    invoicesScreen(supabase = supabase, navController = navController)
+    AdminUsersScreen(supabase = supabase,navController=navController)
 }
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun invoicesScreen(
-    supabase: SupabaseClient,
-    viewModel: InvoiceViewModel= viewModel(factory = InvoiceViewModelFactory(supabase)),
+fun AdminUsersScreen(
+    supabase:SupabaseClient,
+    viewModel: UserViewModel = viewModel(factory = UserViewModelFactoryT (supabase)),
     navController: NavController
-){
+    ) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val invoices by viewModel.invoicelist.collectAsState()
+    val users by viewModel.userlist.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -159,7 +159,7 @@ fun invoicesScreen(
                             color = Color.Red,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
-                        Button(onClick = { viewModel.getInvoices() }) { Text("Retry") }
+                        Button(onClick = { viewModel.getUsers() }) { Text("Retry") }
                     }
                 }
                 else->{
@@ -170,12 +170,13 @@ fun invoicesScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ){
 
-                        itemsIndexed (invoices) { index, invoice ->
+                        itemsIndexed (users) { index, user ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
 
                             ) {
@@ -191,33 +192,25 @@ fun invoicesScreen(
                                         fontSize = 16.sp,
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
-                                    UsersText(supabase, invoice.id_user)
+
                                     // Tiêu đề
                                     Text(
-                                        text = "Số lượng: ${invoice.amount}",
+                                        text = "Họ và tên: ${user.username}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
                                     Text(
-                                        text = "Tiền tệ: ${invoice.currency}",
+                                        text = "Email: ${user.email}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
                                     Text(
-                                        text = "Phương thức: ${invoice.payment_method}",
+                                        text = "Số điện thoại: ${user.phone}",
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
-                                    Text(
-                                        text = "Trạng thái: ${invoice.status}",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
-                                    Text(
-                                        text = "Ngày giao dịch: ${formatTransactionDate(invoice.transaction_date)}",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
+                                    // Ảnh đại diện
+                                    TypeAccountText(supabase, user.id_type_account)
 
                                 }
                             }
@@ -230,29 +223,26 @@ fun invoicesScreen(
     }
 }
 
-
 @Composable
-fun UsersText(supabase: SupabaseClient, id: Int) {
-    // Lấy thông tin người dùng theo ID
-    var users by remember { mutableStateOf<Users?>(null) }
+fun TypeAccountText(supabase: SupabaseClient, id: Int) {
+    var typeAccount by remember { mutableStateOf<type_accounts?>(null) }
+
     LaunchedEffect(id) {
-        users= getuserbyid(supabase, id)
+        typeAccount = getTypeAccount(supabase, id)
     }
 
     Text(
-        text = "Họ và tên: ${users?.username ?: "Unknown"}",
+        text = "Loại tài khoản: ${typeAccount?.type ?: "Unknown"}",
         fontSize = 14.sp,
         modifier = Modifier.padding(bottom = 16.dp)
     )
-
 }
 
-suspend fun getuserbyid(supabase: SupabaseClient, id: Int): Users?{
-    // Lấy thông tin người dùng theo ID
-    val userlist=supabase.postgrest["users"]
-        .select{
-            filter { eq("id",id) }
+suspend fun getTypeAccount(supabase: SupabaseClient, id: Int): type_accounts? {
+    val typeList = supabase.postgrest["type_accounts"]
+        .select {
+            filter { eq("id", id) }
         }
-        .decodeList<Users>()
-    return userlist.firstOrNull()
+        .decodeList<type_accounts>()
+    return typeList.firstOrNull()
 }

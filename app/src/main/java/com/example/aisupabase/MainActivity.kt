@@ -6,28 +6,29 @@ import androidx.activity.compose.setContent
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.aisupabase.pages.Admin_Blogs
-import com.example.aisupabase.pages.Admin_Courses
-import com.example.aisupabase.pages.Admin_Lessons
-import com.example.aisupabase.pages.Admin_Questions
-import com.example.aisupabase.pages.Admin_Roadmaps
-import com.example.aisupabase.pages.Admin_Tag_Blogs
-import com.example.aisupabase.pages.Admin_Type_Accounts
-import com.example.aisupabase.pages.Admin_User_Invoids
-import com.example.aisupabase.pages.Client_Blog
-import com.example.aisupabase.pages.Client_Course
-import com.example.aisupabase.pages.Client_Search
-import com.example.aisupabase.pages.Client_User
-import com.example.aisupabase.pages.Admin_Users
-import com.example.aisupabase.pages.Blog_Detail
-import com.example.aisupabase.pages.ClientCourseByRM
-import com.example.aisupabase.pages.Client_Blog_By_Tag
-import com.example.aisupabase.pages.Client_Course_User
-import com.example.aisupabase.pages.Client_Question
-import com.example.aisupabase.pages.Client_RM
-import com.example.aisupabase.pages.Client_Tag
-import com.example.aisupabase.pages.Course_Detail
-import com.example.aisupabase.pages.Lesson_Detail
+import com.example.aisupabase.pages.admin.Admin_Blogs
+import com.example.aisupabase.pages.admin.Admin_Courses
+import com.example.aisupabase.pages.admin.Admin_Lessons
+import com.example.aisupabase.pages.admin.Admin_Questions
+import com.example.aisupabase.pages.admin.Admin_Roadmaps
+import com.example.aisupabase.pages.admin.Admin_Tag_Blogs
+import com.example.aisupabase.pages.admin.Admin_Type_Accounts
+import com.example.aisupabase.pages.admin.Admin_User_Invoids
+import com.example.aisupabase.pages.client.Client_Blog
+import com.example.aisupabase.pages.client.Client_Course
+import com.example.aisupabase.pages.client.Client_Search
+import com.example.aisupabase.pages.client.Client_User
+import com.example.aisupabase.pages.admin.Admin_Users
+import com.example.aisupabase.pages.client.Blog_Detail
+import com.example.aisupabase.pages.client.ClientCourseByRM
+import com.example.aisupabase.pages.client.Client_Blog_By_Tag
+import com.example.aisupabase.pages.client.Client_Course_User
+import com.example.aisupabase.pages.client.Client_Noti
+import com.example.aisupabase.pages.client.Client_Question
+import com.example.aisupabase.pages.client.Client_RM
+import com.example.aisupabase.pages.client.Client_Tag
+import com.example.aisupabase.pages.client.Course_Detail
+import com.example.aisupabase.pages.client.Lesson_Detail
 import com.example.aisupabase.screens.AdminHomeScreen
 import com.example.aisupabase.screens.ClientHomeScreen
 import com.example.aisupabase.screens.LoginScreen
@@ -65,6 +66,7 @@ class MainActivity : ComponentActivity() {
                 composable("client_tag") { Client_Tag(navController) }
                 composable("client_roadmap") { Client_RM(navController) }
                 composable("client_course_user") { Client_Course_User(navController) }
+                composable("client_noti") { Client_Noti(navController) }
 
                 // client detail page
                 composable("client_detail_blog/{id}") { backStackEntry ->

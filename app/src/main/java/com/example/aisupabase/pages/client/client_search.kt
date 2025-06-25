@@ -1,13 +1,15 @@
 package com.example.aisupabase.pages.client
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
@@ -26,11 +28,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
@@ -43,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import blogs
+import coil.compose.AsyncImage
 import com.example.aisupabase.R
 import com.example.aisupabase.components.bottombar.BottomNavigationBar
 import com.example.aisupabase.components.card_components.BlogPostItem
@@ -52,6 +52,7 @@ import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
+import com.example.aisupabase.controllers.LearnRepository
 import com.example.aisupabase.controllers.authUser
 import courses
 import io.github.jan.supabase.SupabaseClient
@@ -60,7 +61,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
 
-class searchViewModel(private val blogRespository: BlogRepository, private val courseRepository: CourseRepository):ViewModel()
+class searchViewModel(
+    private val blogRespository: BlogRepository,
+    private val courseRepository: CourseRepository,
+    private val learnRepository: LearnRepository):ViewModel()
 {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -73,6 +77,9 @@ class searchViewModel(private val blogRespository: BlogRepository, private val c
 
     private val _coursesList = MutableStateFlow<List<courses>>(emptyList())
     val coursesList: StateFlow<List<courses>> = _coursesList
+
+    private val _subCount = MutableStateFlow(0)
+    val subCount: StateFlow<Int> = _subCount
 
     fun searchCourse(query: String) {
         _isLoading.value = true
@@ -107,13 +114,24 @@ class searchViewModel(private val blogRespository: BlogRepository, private val c
             _isLoading.value = false
         }
     }
+
+    fun getCountSub(id: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = learnRepository.getCountSub(id)) {
+                else -> _subCount.value = result
+            }
+            _isLoading.value = false
+        }
+    }
 }
 
 // viewFactory
 class searchViewModelFactory(private val supabase: SupabaseClient): ViewModelProvider.Factory{
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(searchViewModel::class.java)) {
-            return searchViewModel(BlogRepository(supabase), CourseRepository(supabase)) as T
+            return searchViewModel(BlogRepository(supabase), CourseRepository(supabase),LearnRepository(supabase)) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -159,6 +177,8 @@ fun SearchHomeView(
     val textFieldState = rememberTextFieldState()
     val searchResults by viewModel.coursesList.collectAsState()
     val searchResultsBlog by viewModel.blogsList.collectAsState()
+    val subCount by viewModel.subCount.collectAsState()
+
     val onSearch: (String) -> Unit = { query ->
         viewModel.searchCourse(query)
         viewModel.searchBlog(query)
@@ -180,15 +200,14 @@ fun SearchHomeView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0x994C1D95),
-                            Color(0x996366F1),
-                        )
-                    )
-                )
+
         ) {
+            AsyncImage(
+                model = R.drawable.bg_6,
+                contentDescription = "Ảnh",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
                 Box(modifier = Modifier
                     .fillMaxSize()
                     .semantics { isTraversalGroup = true })
@@ -216,27 +235,48 @@ fun SearchHomeView(
                         Column(Modifier.verticalScroll(rememberScrollState())) {
                             if(!searchResults.isEmpty()) {
                                 Text(
-                                    "Bài học",
+                                    "Tài liệu",
                                     fontSize = 20.sp,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
-                                searchResults.forEach { result ->
-                                    PopularCourseItem(course = result,navController,1)
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(
+                                        items = searchResults,
+                                        key = { course -> course.id ?: 0 }
+                                    ) { course ->
+                                        LaunchedEffect(course.id) {
+                                            if (course.id != null) {
+                                                viewModel.getCountSub(course.id)
+                                            }
+                                        }
+                                        PopularCourseItem(course, navController, subCount)
+                                    }
                                 }
                             }
                             if(!searchResultsBlog.isEmpty()){
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    "Blog",
+                                    "Bài đăng",
                                     fontSize =20.sp,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
-                                searchResultsBlog.forEach { result ->
-                                    BlogPostItem(blogPost = result,navController)
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(
+                                        items = searchResultsBlog,
+                                        key = { blog ->
+                                            blog.id ?: 0
+                                        }  // Assuming blog has id field
+                                    ) { blog ->
+                                        BlogPostItem(blog, navController)
+                                    }
                                 }
                             }
-
-
                         }
                     }
                 }

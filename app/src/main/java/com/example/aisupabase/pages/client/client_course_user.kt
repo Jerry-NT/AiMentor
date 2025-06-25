@@ -173,19 +173,9 @@ fun ClientCourseUserHomeView(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x994C1D95),
-                                Color(0x996366F1),
-                                Color(0x9972658F),
-                                Color(0x999595B7)
-                            )
-                        )
-                    )
             ) {
                 AsyncImage(
-                    model = R.drawable.pic_1,
+                    model = R.drawable.bg_4,
                     contentDescription = "Ảnh",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

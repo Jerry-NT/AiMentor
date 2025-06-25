@@ -27,6 +27,7 @@ import com.example.aisupabase.pages.client.Client_Noti
 import com.example.aisupabase.pages.client.Client_Question
 import com.example.aisupabase.pages.client.Client_RM
 import com.example.aisupabase.pages.client.Client_Tag
+import com.example.aisupabase.pages.client.Client_Update_Account
 import com.example.aisupabase.pages.client.Course_Detail
 import com.example.aisupabase.pages.client.Lesson_Detail
 import com.example.aisupabase.screens.AdminHomeScreen
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
                 composable("client_roadmap") { Client_RM(navController) }
                 composable("client_course_user") { Client_Course_User(navController) }
                 composable("client_noti") { Client_Noti(navController) }
+                composable("client_update_account") { Client_Update_Account(navController) }
 
                 // client detail page
                 composable("client_detail_blog/{id}") { backStackEntry ->
@@ -93,6 +95,7 @@ class MainActivity : ComponentActivity() {
                     val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
                     ClientCourseByRM(navController, id)
                 }
+
             }
 
 

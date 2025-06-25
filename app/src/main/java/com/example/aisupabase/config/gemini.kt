@@ -13,7 +13,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
-class FirebaseGeminiService {
+class GeminiService {
 
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -28,7 +28,7 @@ class FirebaseGeminiService {
     suspend fun generateText(prompt: String): String {
         val response: GeminiResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
             contentType(ContentType.Application.Json)
-            parameter("key", "")
+            parameter("key", getGeminiKey.returnkey())
             setBody(
                 GeminiRequest(
                     contents = listOf(

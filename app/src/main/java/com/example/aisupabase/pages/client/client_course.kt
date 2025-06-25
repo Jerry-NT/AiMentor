@@ -169,7 +169,7 @@ fun CourseHomeView(
                                 Color(0x999595B7))))
             ) {
                 AsyncImage(
-                    model = R.drawable.pic_1,
+                    model = R.drawable.bg_2,
                     contentDescription = "Ảnh",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -185,7 +185,7 @@ fun CourseHomeView(
                 ) {
                     item(span = { GridItemSpan(2) }) {
                         Text(
-                            text = "Danh sách khóa học",
+                            text = "Danh sách tài liệu",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,

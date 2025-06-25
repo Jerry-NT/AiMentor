@@ -55,9 +55,11 @@ import blogs
 import coil.compose.AsyncImage
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.config.function_handle_public.TagName
+import com.example.aisupabase.config.function_handle_public.formatToParagraphs
 import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.controllers.authUser
+import com.example.aisupabase.ui.theme.Purple100
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -160,7 +162,7 @@ fun BlogDetailView(
                     .fillMaxSize()
                     .padding(paddingValues),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
-            ){
+            ) {
                 // Hero Image
                 item {
                     Box(
@@ -196,97 +198,114 @@ fun BlogDetailView(
                 // nội dung
                 // Content Section
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .offset(y = (-20).dp), // Overlap with image
-                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                    ){
-                        Column(
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp)
-                        ){
-                            Text(
-                                text = Listblogs[0].title_blog,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2D3748),
-                                lineHeight = 36.sp,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-
-                            Row(
+                                .offset(y = (-20).dp), // Overlap with image
+                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(
+                                                Color(0x99957CDC), // Purple-900
+                                                Color(0x99907FCB),
+                                                Color(0x99F3EFEF)// Indigo-500
+                                            )
+                                        )
+                                    )
+                            ){
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 24.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(24.dp)
                             ) {
-                                // Creation Time
+                                Text(
+                                    text = Listblogs[0].title_blog,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2D3748),
+                                    lineHeight = 36.sp,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+
                                 Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 24.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        Icons.Default.DateRange,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
-                                        tint = Color.Gray
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    val createdAt = Listblogs[0].created_at
-                                    val inputFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
-                                    val outputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'lúc' HH:mm", Locale("vi", "VN"))
+                                    // Creation Time
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.DateRange,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Color.Gray
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        val createdAt = Listblogs[0].created_at
+                                        val inputFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                                        val outputFormatter = DateTimeFormatter.ofPattern(
+                                            "dd/MM/yyyy 'lúc' HH:mm",
+                                            Locale("vi", "VN")
+                                        )
 
-                                    val formattedDate = try {
-                                        val date = LocalDateTime.parse(createdAt, inputFormatter)
-                                        outputFormatter.format(date)
-                                    } catch (e: Exception) {
-                                        createdAt
+                                        val formattedDate = try {
+                                            val date =
+                                                LocalDateTime.parse(createdAt, inputFormatter)
+                                            outputFormatter.format(date)
+                                        } catch (e: Exception) {
+                                            createdAt
+                                        }
+
+                                        Text(
+                                            text = formattedDate,
+                                            fontSize = 14.sp,
+                                            color = Color.Gray,
+                                            fontWeight = FontWeight.Medium
+                                        )
                                     }
-
-                                    Text(
-                                        text = formattedDate,
-                                        fontSize = 14.sp,
-                                        color = Color.Gray,
-                                        fontWeight = FontWeight.Medium
-                                    )
                                 }
-                            }
 
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 20.dp),
-                                color = Color.Gray.copy(alpha = 0.2f)
-                            )
-
-                            // Blog Content
-                            Text(
-                                text = Listblogs[0].content_blog,
-                                fontSize = 16.sp,
-                                color = Color(0xFF4A5568),
-                                lineHeight = 28.sp,
-                                textAlign = TextAlign.Justify,
-                                modifier = Modifier.padding(bottom = 24.dp)
-                            )
-
-                            // tagname
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(bottom = 32.dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = Color(0xFF4ECDC4).copy(alpha = 0.1f),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        Color(0xFF4ECDC4).copy(alpha = 0.3f)
-                                    )
-                                ){
-                                    "#${TagName(supabase,Listblogs[0].id_tag)}"
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Purple100.copy(alpha = 0.1f),
+                                        border = BorderStroke(
+                                            1.dp,
+                                            Purple100.copy(alpha = 0.3f)
+                                        )
+                                    ) {
+                                        "#${TagName(supabase, Listblogs[0].id_tag)}"
+                                    }
                                 }
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 20.dp),
+                                    color = Color.Gray.copy(alpha = 0.2f)
+                                )
+
+                                // Blog Content
+                                val formattedContent = formatToParagraphs(Listblogs[0].content_blog)
+                                Text(
+                                    text = formattedContent,
+                                    fontSize = 16.sp,
+                                    color = Color(0xFF4A5568),
+                                    lineHeight = 28.sp,
+                                    textAlign = TextAlign.Justify,
+                                    modifier = Modifier.padding(bottom = 24.dp)
+                                )
+
                             }
                         }
                     }

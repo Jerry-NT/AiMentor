@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import com.example.aisupabase.components.card_components.tagItem
 import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
@@ -139,10 +140,8 @@ fun ClientTagHomeView(
 )
 {
     val ListTag by viewModel.tagList.collectAsState()
-
     // thông tin user
     val context = LocalContext.current
-    val session = authUser().getUserSession(context)
 
     // bottom bar setup
     val routeToIndex = mapOf(
@@ -158,6 +157,12 @@ fun ClientTagHomeView(
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
 
     val tagCounts by viewModel.tagCounts.collectAsState()
+
+    val imageListBlog = (0..5).map { index ->
+        val imageName = "image_blog_$index"
+        val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
+        if (resId != 0) resId else R.drawable.background  // fallback nếu không tìm thấy
+    }
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
     }
@@ -178,19 +183,10 @@ fun ClientTagHomeView(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x994C1D95),
-                                Color(0x996366F1),
-                                Color(0x9972658F),
-                                Color(0x999595B7)
-                            )
-                        )
-                    )
+
             ) {
                 AsyncImage(
-                    model = R.drawable.pic_1,
+                    model = R.drawable.bg_4,
                     contentDescription = "Ảnh",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -215,12 +211,15 @@ fun ClientTagHomeView(
                         )
                     }
 
-                    items(ListTag) { tag ->
-                            val count = tagCounts[tag.id ] ?: 0
-                            LaunchedEffect(tag.id) {
-                                viewModel.loadBlogConuntForTag(tag.id )
-                            }
-                            tagItem(tag,count,navController)
+                    itemsIndexed(ListTag) { index, tag ->
+                        val count = tagCounts[tag.id] ?: 0
+                        val idImage = imageListBlog.getOrNull(index) ?: R.drawable.background
+
+                        LaunchedEffect(tag.id) {
+                            viewModel.loadBlogConuntForTag(tag.id)
+                        }
+
+                        tagItem(tag, count, navController, idImage)
                     }
                 }
             }

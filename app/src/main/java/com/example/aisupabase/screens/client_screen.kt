@@ -1,7 +1,9 @@
 package com.example.aisupabase.screens
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +34,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -72,12 +73,19 @@ import com.example.aisupabase.controllers.TagRepository
 import com.example.aisupabase.controllers.TagResult
 import com.example.aisupabase.models.Tags
 import course_roadmaps
-import user_course
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import com.example.aisupabase.components.card_components.BannerItem
 import com.example.aisupabase.components.card_components.CarouselBanner
 import com.example.aisupabase.components.card_components.CourseCard
+import com.example.aisupabase.config.function_handle_public.LazyLoadItem
+import com.example.aisupabase.controllers.LearnResult
+import com.example.aisupabase.models.streaks
+import com.example.aisupabase.ui.theme.Purple100
+import java.time.LocalDate
 
 // view model
 class homeViewModel(
@@ -86,9 +94,7 @@ class homeViewModel(
     private val roadMapRepository: RoadMapRepository,
     private val tagRepository: TagRepository,
     private val learnRepository: LearnRepository
-    ) : ViewModel()
-{
-
+) : ViewModel() {
     private val _blogsList = MutableStateFlow<List<blogs>>(emptyList())
     val blogsList: StateFlow<List<blogs>> = _blogsList
 
@@ -104,9 +110,6 @@ class homeViewModel(
     private val _tagList = MutableStateFlow<List<Tags>>(emptyList())
     val tagList: StateFlow<List<Tags>> = _tagList
 
-    private val _listUserCourse = MutableStateFlow<List<user_course>>(emptyList())
-    val listUserCourse: StateFlow<List<user_course>> = _listUserCourse
-
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -119,6 +122,11 @@ class homeViewModel(
     private val _tagCounts = MutableStateFlow<Map<Int, Int>>(emptyMap())
     val tagCounts: StateFlow<Map<Int, Int>> = _tagCounts
 
+    private val _processMap = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    val processMap: StateFlow<Map<Int, Double>> = _processMap
+
+    private val _subCount = MutableStateFlow(0)
+    val subCount: StateFlow<Int> = _subCount
 
     init {
         fetchBlogs()
@@ -151,7 +159,7 @@ class homeViewModel(
         }
     }
 
-     fun fetchCoursesByUser(id_user:Int) {
+    fun fetchCoursesByUser(id_user: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -175,8 +183,7 @@ class homeViewModel(
         }
     }
 
-    private fun fetchTag()
-    {
+    private fun fetchTag() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -195,40 +202,37 @@ class homeViewModel(
                     val count = result.data?.size ?: 0
                     _roadmapCourseCounts.value = _roadmapCourseCounts.value + (roadmapId to count)
                 }
-                else -> { /* handle error if needed */ }
+
+                else -> { /* handle error if needed */
+                }
             }
         }
     }
 
-    fun loadBlogConuntForTag(id:Int)
-    {
+    fun loadBlogConuntForTag(id: Int) {
         viewModelScope.launch {
             when (val result = blogRepository.getBlogByTagID(id)) {
                 is BlogResult.Success -> {
                     val count = result.data?.size ?: 0
                     _tagCounts.value = _tagCounts.value + (id to count)
                 }
-                else -> { /* handle error if needed */ }
+
+                else -> { /* handle error if needed */
+                }
             }
         }
     }
-
-    private val _subCount = MutableStateFlow(0)
-    val subCount: StateFlow<Int> = _subCount
 
     fun getCountSub(id: Int) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             when (val result = learnRepository.getCountSub(id)) {
-                else -> _subCount.value = result ?: 0
+                else -> _subCount.value = result
             }
             _isLoading.value = false
         }
     }
-
-    private val _processMap = MutableStateFlow<Map<Int, Double>>(emptyMap())
-    val processMap: StateFlow<Map<Int, Double>> = _processMap
 
     fun getProcess(id_user: Int, id_course: Int) {
         viewModelScope.launch {
@@ -241,6 +245,39 @@ class homeViewModel(
         }
     }
 
+
+    private val _StreakList = MutableStateFlow<List<streaks>>(emptyList())
+    val StreakList: StateFlow<List<streaks>> = _StreakList
+
+    fun getStreak(id_user: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = learnRepository.getStreak(id_user)) {
+                is LearnResult.Success -> {
+                    _StreakList.value = result.data ?: emptyList()
+                }
+
+                is LearnResult.Error -> _error.value = result.exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun checkStreak(id_user: Int)
+    {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = learnRepository.addOrUpdateStreak(id_user)) {
+                is LearnResult.Success -> {
+                     getStreak(id_user)
+                }
+                is LearnResult.Error -> _error.value = result.exception.message
+            }
+            _isLoading.value = false
+        }
+    }
 }
 
 // view model factory
@@ -274,8 +311,7 @@ fun ClientHomeScreen(navController: NavController) {
     }
 
     val supabase = SupabaseClientProvider.client
-    ClientHomeView(navController,supabase)
-
+    ClientHomeView(navController, supabase)
 }
 
 // CRUD view
@@ -284,104 +320,115 @@ fun ClientHomeScreen(navController: NavController) {
 fun ClientHomeView(
     navController: NavController,
     supabase: SupabaseClient,
-    viewModel: homeViewModel = viewModel(factory = HomeViewModelFactory (supabase)))
-{
-
+    viewModel: homeViewModel = viewModel(factory = HomeViewModelFactory(supabase))
+) {
     val Listblogs by viewModel.blogsList.collectAsState()
     val Listcourses by viewModel.courseList.collectAsState()
     val ListRoadMap by viewModel.roadMapList.collectAsState()
     val ListTag by viewModel.tagList.collectAsState()
     val ListcoursesByUser by viewModel.courseListbyUser.collectAsState()
+    val listStreak by viewModel.StreakList.collectAsState()
 
     val roadmapCourseCounts by viewModel.roadmapCourseCounts.collectAsState()
     val subCount by viewModel.subCount.collectAsState()
     val processMap by viewModel.processMap.collectAsState()
-
     val tagCounts by viewModel.tagCounts.collectAsState()
-    val context = LocalContext.current
 
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val context = LocalContext.current
 
     // thông tin user
     val session = authUser().getUserSession(context)
     val username = session["username"] as? String
+    val userid = session["id"]
 
     // xử lý lay anh đại diện
-    val indexImage = session["index_image"] as? Int
-    val imageName = "avatar_" + (indexImage?.toString() ?: "")
-    val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
-    val imageResId = if (resId != 0) resId else R.drawable.background
+    val imageResId = remember(session["index_image"]) {
+        val indexImage = session["index_image"] as? Int
+        val imageName = "avatar_" + (indexImage?.toString() ?: "")
+        val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
+        if (resId != 0) resId else R.drawable.background
+    }
 
-    val bannerItems = listOf(
-        BannerItem(
-            title = "AI Mentor bạn của mọi nhà.",
-            subtitle = "Hãy tận hưởng, trải nghiệm và nâng cấp kỹ năng",
-            imageRes = R.drawable.pic_1
-        ),
-        BannerItem(
-            title = "AI Mentor hãy học theo cái cách của bạn.",
-            subtitle = "Gần mực thì đen, gần quên thì xuất hiện.",
-            imageRes = R.drawable.pic_1 // Replace with your actual drawable
-        ),
-        BannerItem(
-            title = "AI Mentor && Fast Document",
-            subtitle = "Tạo nhanh tài liệu, học nhanh kiến thức.",
-            imageRes = R.drawable.pic_1
+    // xu ly list anh image_x tu 0 -> 5
+    val imageList = remember {
+        (0..7).map { index ->
+            val imageName = "image_$index"
+            val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
+            if (resId != 0) resId else R.drawable.background
+        }
+    }
+
+    val imageListBlog = remember {
+        (0..7).map { index ->
+            val imageName = "image_blog_$index"
+            val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
+            if (resId != 0) resId else R.drawable.background
+        }
+    }
+
+    val bannerItems = remember {
+        listOf(
+            BannerItem(
+                title = "AI Mentor bạn của mọi nhà.",
+                subtitle = "Hãy tận hưởng, trải nghiệm và nâng cấp kỹ năng",
+                imageRes = R.drawable.image_0
+            ),
+            BannerItem(
+                title = "AI Mentor hãy học theo cái cách của bạn.",
+                subtitle = "Gần mực thì đen, gần quên thì xuất hiện.",
+                imageRes = R.drawable.image_1
+            ),
+            BannerItem(
+                title = "AI Mentor && Fast Document",
+                subtitle = "Tạo nhanh tài liệu, học nhanh kiến thức.",
+                imageRes = R.drawable.image_2
+            )
         )
-    )
-    val id_user = session["id"]
-    LaunchedEffect(id_user) {
-        viewModel.fetchCoursesByUser(id_user as Int)
+    }
+
+    // xu ly effect
+    LaunchedEffect(userid) {
+        viewModel.fetchCoursesByUser(userid as Int)
+    }
+
+    LaunchedEffect(userid) {
+        viewModel.getStreak(userid as Int)
     }
 
     var selectedIndex by remember { mutableStateOf(0) }
-        Scaffold(
-            bottomBar = {
-                BottomNavigationBar(
-                    selectedIndex = selectedIndex,
-                    onItemSelected = { index -> selectedIndex = index },
-                    navController
-                )
-            }
-        ){paddingValues ->
-            Box(
-                modifier = Modifier
-                    .padding(paddingValues)
-            ){
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                selectedIndex = selectedIndex,
+                onItemSelected = { index -> selectedIndex = index },
+                navController
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+        ) {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            )
+            {
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0x994C1D95),
-                                    Color(0x996366F1)  ,
-                                    Color(0x9972658F), // Purple-900
-                                    Color(0x999595B7)  // Indigo-500
-                                )
-                            )
-                        )
-                        .blur(radius = 20.dp)
-                )
-
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp))
-                {
-
-                    // header - user welcome
-                    item {
+                // header - user welcome
+                item {
+                    LazyLoadItem {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically) {
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             // avatar
                             Box(
                                 modifier = Modifier
                                     .size(59.dp)
                                     .clip(CircleShape)
-                                    .background(Color.Gray)) {
+                                    .background(Color.Gray)
+                            ) {
                                 Image(
                                     painter = painterResource(id = imageResId),
                                     contentDescription = null,
@@ -396,40 +443,51 @@ fun ClientHomeView(
                             // welcome text
                             Column {
                                 Text(
-                                    "Chào buổi sáng",
-                                    fontSize = 15.sp,
-                                    color = Color.White
+                                    "Welcome to,",
+                                    fontSize = 16.sp,
+                                    color = Color.Black
                                 )
                                 Text(
-                                    "${username}",
+                                    "$username",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
+                }
 
-                    // wellcome text
-                    item {
+                // wellcome text
+                item {
+                    LazyLoadItem {
                         Text(
-                            text = "Hãy chọn\nKhóa học dành cho bạn",
+                            text = buildAnnotatedString {
+                                append("Hãy chọn\n")
+
+                                withStyle(style = SpanStyle(color = Purple100)) {
+                                    append("Khóa học dành cho bạn")
+                                }
+                            },
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black,
                             lineHeight = 36.sp
                         )
                     }
+                }
 
-                    // banner
-                    item{
+                // banner
+                item {
+                    LazyLoadItem {
                         CarouselBanner(
                             bannerItems = bannerItems,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                }
 
-                    // điểm danh
-                    item {
+                // điểm danh
+                item {
+                    LazyLoadItem {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
@@ -444,7 +502,7 @@ fun ClientHomeView(
                                         brush = Brush.horizontalGradient(
                                             colors = listOf(
                                                 Color(0x994C1D95), // Purple-900
-                                                Color(0x996366F1) , // Indigo-500
+                                                Color(0x996366F1), // Indigo-500
                                                 Color(0x99CF55E7)
                                             )
                                         )
@@ -452,56 +510,72 @@ fun ClientHomeView(
                             )
                             {
                                 Row(
-                                    modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                                    modifier = Modifier
+                                        .padding(20.dp)
+                                        .fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
 
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "🔥",
-                                            fontSize = 24.sp
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
+                                    listStreak.forEach { streak ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+
                                             Text(
-                                                text = "19",
-                                                fontSize = 24.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White
+                                                text = "🔥",
+                                                fontSize = 24.sp
                                             )
-                                            Text(
-                                                text = "Chuỗi bùng nổ",
-                                                fontSize = 14.sp,
-                                                color = Color.White
-                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(
+                                                    text = "${streak.count}",
+                                                    fontSize = 24.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White
+                                                )
+                                                Text(
+                                                    text = "Chuỗi bùng nổ",
+                                                    fontSize = 14.sp,
+                                                    color = Color.White
+                                                )
+                                            }
+
+                                        }
+                                        val createdAtDate =
+                                            LocalDate.parse(streak.created_at.substring(0, 10))
+                                        val today = LocalDate.now()
+
+                                        if (createdAtDate.isBefore(today)) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = Color(0xFF6366F1),
+                                                modifier = Modifier.size(48.dp)
+                                                    .clickable(onClick = {viewModel.checkStreak(
+                                                        userid as Int
+                                                    )})
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier
+                                                        .size(24.dp)
+                                                        .wrapContentSize(Alignment.Center)
+                                                )
+                                            }
                                         }
                                     }
 
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = Color(0xFF6366F1),
-                                        modifier = Modifier.size(48.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .wrapContentSize(Alignment.Center)
-                                        )
-                                    }
                                 }
                             }
-
                         }
                     }
+                }
 
-                    // khoa hoc da hoc
-                    item {
+                // khoa hoc da hoc
+                item {
+                    LazyLoadItem {
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -509,12 +583,12 @@ fun ClientHomeView(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    "Khóa học đang học",
+                                    "Tài liệu đang tham khảo",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = { navController.navigate("client_course_user") }) {
-                                    Text("Xem tất cả", color = Color.White)
+                                    Text("Xem tất cả", color = Purple100)
                                 }
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -522,20 +596,28 @@ fun ClientHomeView(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    items(ListcoursesByUser) { course ->
-                                        LaunchedEffect(course.id,id_user) {
-                                            viewModel.getProcess(id_user as Int,course.id ?: 0)
+                                    items(
+                                        items = ListcoursesByUser,
+                                        key = { course -> course.id ?: 0 }
+                                    ) { course ->
+                                        LaunchedEffect(course.id, userid) {
+                                            viewModel.getProcess(
+                                                userid as Int,
+                                                course.id ?: 0
+                                            )
                                         }
                                         val process = processMap[course.id ?: 0] ?: 0.0
-                                        CourseCard(course, process,navController)
+                                        CourseCard(course, process, navController)
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    // list lo trinh
-                    item {
+                // list lo trinh
+                item {
+                    LazyLoadItem {
                         Column {
 
                             Row(
@@ -549,32 +631,38 @@ fun ClientHomeView(
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = { navController.navigate("client_roadmap") }) {
-                                    Text("Xem tất cả",color = Color.White)
+                                    Text("Xem tất cả", color = Purple100)
                                 }
                             }
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                ListRoadMap.take(2).forEach {
-                                    roadmap ->
-                                    if(roadmap.title != "Người dùng")
-                                    {
+                                items(
+                                    items = ListRoadMap.take(2),
+                                    key = { roadmap -> roadmap.id ?: 0 }
+                                ) { roadmap ->
+                                    val index = ListRoadMap.take(2).indexOf(roadmap)
                                     val count = roadmapCourseCounts[roadmap.id ?: 0] ?: 0
-                                    LaunchedEffect(roadmap.id) {
-                                        viewModel.loadCourseCountForRoadmap(roadmap.id ?: 0)
-                                    }
-                                    roadmapItem(roadmap, count,navController)
-                                    }
+                                    val idImage =
+                                        imageList.getOrNull(index) ?: R.drawable.background
 
+                                    LaunchedEffect(roadmap.id) {
+                                        if (roadmap.id != null) {
+                                            viewModel.loadCourseCountForRoadmap(roadmap.id)
+                                        }
+                                    }
+                                    roadmapItem(roadmap, count, navController, idImage)
                                 }
                             }
                         }
                     }
+                }
 
-                    // list tag
-                    item {
+                // list tag
+                item {
+                    LazyLoadItem {
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -587,40 +675,7 @@ fun ClientHomeView(
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = { navController.navigate("client_tag") }) {
-                                    Text("Xem tất cả",color = Color.White)
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                ListTag.take(2).forEach {
-                                        tag ->
-                                    val count = tagCounts[tag.id ] ?: 0
-                                    LaunchedEffect(tag.id) {
-                                        viewModel.loadBlogConuntForTag(tag.id )
-                                    }
-                                    tagItem(tag,count,navController)
-                                }
-                            }
-                        }
-                    }
-
-                    // danh sach khoa hoc
-                    item {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "Khóa học mới nhất",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                TextButton(onClick = { navController.navigate("client_course") }) {
-                                    Text("Xem tất cả", color = Color.White)
+                                    Text("Xem tất cả", color = Purple100)
                                 }
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -628,19 +683,69 @@ fun ClientHomeView(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    items(Listcourses) { course ->
-                                        LaunchedEffect(course.id) {
-                                            viewModel.getCountSub(course.id ?: 0)
+                                    items(
+                                        items = ListTag.take(2),
+                                        key = { tag -> tag.id }
+                                    ) { tag ->
+                                        val index = ListTag.take(2).indexOf(tag)
+                                        val count = tagCounts[tag.id] ?: 0
+                                        val idImage = imageListBlog.getOrNull(index)
+                                            ?: R.drawable.background
+
+                                        LaunchedEffect(tag.id) {
+                                            viewModel.loadBlogConuntForTag(tag.id)
                                         }
-                                        PopularCourseItem(course, navController,subCount)
+                                        tagItem(tag, count, navController, idImage)
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    // AI Mentor Bottom Banner
-                    item {
+                // danh sach khoa hoc
+                item {
+                    LazyLoadItem {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Tài liệu mới nhất",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                TextButton(onClick = { navController.navigate("client_course") }) {
+                                    Text("Xem tất cả", color = Purple100)
+                                }
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(
+                                        items = Listcourses,
+                                        key = { course -> course.id ?: 0 }
+                                    ) { course ->
+                                        LaunchedEffect(course.id) {
+                                            if (course.id != null) {
+                                                viewModel.getCountSub(course.id)
+                                            }
+                                        }
+                                        PopularCourseItem(course, navController, subCount)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // AI Mentor Bottom Banner
+                item {
+                    LazyLoadItem {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -686,11 +791,14 @@ fun ClientHomeView(
                                     )
                                 }
                             }
+
                         }
                     }
+                }
 
-                    // danh sach blo
-                    item {
+                // danh sach blo
+                item {
+                    LazyLoadItem {
                         Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -703,7 +811,7 @@ fun ClientHomeView(
                                     fontWeight = FontWeight.Bold
                                 )
                                 TextButton(onClick = { navController.navigate("client_blog") }) {
-                                    Text("Xem tất cả",color = Color.White)
+                                    Text("Xem tất cả", color = Purple100)
                                 }
                             }
 
@@ -712,15 +820,21 @@ fun ClientHomeView(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    items(Listblogs) { blog ->
+                                    items(
+                                        items = Listblogs,
+                                        key = { blog ->
+                                            blog.id ?: 0
+                                        }  // Assuming blog has id field
+                                    ) { blog ->
                                         BlogPostItem(blog, navController)
                                     }
                                 }
-
                             }
                         }
                     }
+
                 }
             }
+        }
     }
 }

@@ -1,6 +1,8 @@
+import android.util.Log
 import com.example.aisupabase.controllers.BlogResult
 import com.example.aisupabase.models.Users
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.result.PostgrestResult
@@ -45,10 +47,25 @@ sealed class UserResult<out T> {
             val result = supabase.from("users").update(user) {
                 filter { eq("id", user.id?:0) }
             }
+            Log.d("UserRepository", "Update result: $result")
             return@withContext UserResult.Success(Unit, result)
         }catch (e: Exception) {
             e.printStackTrace()
             return@withContext UserResult.Error(e)
         }
     }
- }
+
+    // viết hàm đổi mật khẩu supabase auth
+    suspend fun changePassword(newPassword: String): UserResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.auth.updateUser {
+                password = newPassword
+            }
+            return@withContext UserResult.Success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext UserResult.Error(e)
+        }
+    }
+
+}

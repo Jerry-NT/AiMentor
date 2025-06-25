@@ -1,9 +1,7 @@
 package com.example.aisupabase.pages.client
 
 import UserRepository
-import android.util.Patterns
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,10 +39,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -59,6 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -68,20 +66,20 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import coil.compose.AsyncImage
 import com.example.aisupabase.R
 import com.example.aisupabase.components.bottombar.BottomNavigationBar
 import com.example.aisupabase.config.SupabaseClientProvider
 import com.example.aisupabase.controllers.authUser
-import com.example.aisupabase.controllers.notification_crud.createNotificationChannel
-import com.example.aisupabase.controllers.notification_crud.scheduleDailyNotification
 import com.example.aisupabase.models.UserRole
 import com.example.aisupabase.models.Users
 import com.example.aisupabase.ui.theme.Blue
+import com.example.aisupabase.ui.theme.errorRed
+import com.example.aisupabase.ui.theme.primaryBlue
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalTime
 import kotlin.collections.get
 
 // viewmodel
@@ -100,6 +98,19 @@ class ClientUserViewModel(private val userRepository: UserRepository):ViewModel(
             _isLoading.value = true
             _error.value = null
             when (val result = userRepository.updateUser(user)) {
+                is UserResult.Success -> "Thành công"
+                is UserResult.Error -> _error.value = result.exception.message
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun updatePassword( password: String)
+    {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            when (val result = userRepository.changePassword(password)) {
                 is UserResult.Success -> "Thành công"
                 is UserResult.Error -> _error.value = result.exception.message
             }
@@ -156,7 +167,7 @@ fun UserHomeView(
         val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
         val imageResId = if (resId != 0) resId else R.drawable.background
         var showUpdateDialog by remember { mutableStateOf(false) }
-
+        var changePassword by remember { mutableStateOf(false) }
         val settingsItems = listOf(
             SettingsItem(
                 title = "Tùy chỉnh thông tin cá nhân",
@@ -164,9 +175,14 @@ fun UserHomeView(
                 onClick = { showUpdateDialog = true }
             ),
             SettingsItem(
-                title = "Tạo khóa học",
+                title = "Tạo nhanh tài liệu",
                 icon = Icons.Default.Add,
                 onClick = { navController.navigate("client_question") }
+            ),
+            SettingsItem(
+                title = "Nâng cấp tai khoản",
+                icon = Icons.Default.Add,
+                onClick = { navController.navigate("client_update_account") }
             ),
             SettingsItem(
                 title = "Đặt lịch nhắc hẹn",
@@ -180,7 +196,7 @@ fun UserHomeView(
                 title = "Đổi mật khẩu",
                 icon = Icons.Default.Edit,
                 isDestructive = true,
-                onClick = { /* Handle account deletion */ }
+                onClick = {changePassword = true }
             ),
             SettingsItem(
                 title = "Đăng xuất",
@@ -222,16 +238,14 @@ fun UserHomeView(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0x994C1D95),
-                                Color(0x996366F1),
-                                Color(0x9972658F),
-                            )
-                        )
-                    )
             ) {
+                AsyncImage(
+                    model = R.drawable.bg_5,
+                    contentDescription = "Ảnh",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -326,7 +340,7 @@ fun UserHomeView(
 
             // state cho lỗi
             var fullNameError by remember { mutableStateOf<String?>(null) }
-            var emailError by remember { mutableStateOf<String?>(null) }
+
             var phoneError by remember { mutableStateOf<String?>(null) }
             val errorRed = Color(0xFFD32F2F)
             val primaryBlue = Color(0xFF4361EE)
@@ -381,31 +395,6 @@ fun UserHomeView(
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
 
-                            // Trường nhập email
-                            OutlinedTextField(
-                                value = email,
-                                onValueChange = {
-                                    email = it
-                                    emailError = null
-                                },
-                                placeholder = { Text("Email") },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 4.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = if (emailError != null) errorRed else Color.LightGray,
-                                    focusedBorderColor = if (emailError != null) errorRed else primaryBlue
-                                ),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                                singleLine = true,
-                                isError = emailError != null
-                            )
-                            if (emailError != null) {
-                                Text(emailError!!, color = errorRed, fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
-                            } else {
-                                Spacer(modifier = Modifier.height(12.dp))
-                            }
 
                             // Trường nhập số điện thoại
                             OutlinedTextField(
@@ -449,10 +438,6 @@ fun UserHomeView(
                                         valid = false
                                     }
 
-                                    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                                        emailError = "Email không hợp lệ"
-                                        valid = false
-                                    }
                                     if (!phoneNumber.matches(Regex("^\\d{10,11}$"))) {
                                         phoneError = "Số điện thoại phải là 10-11 số"
                                         valid = false
@@ -491,6 +476,130 @@ fun UserHomeView(
                                 onClick = { showUpdateDialog = false },
                                 modifier = Modifier.weight(1f)
                             ) { Text("Hủy") }
+                        }
+                    }
+                }
+            }
+        }
+
+        if(changePassword){
+            var passwordError by remember { mutableStateOf<String?>(null) }
+            var password by remember { mutableStateOf("") }
+            var isLoading by remember { mutableStateOf(false) }
+            val error by viewModel.error.collectAsState()
+            Dialog(onDismissRequest = { showUpdateDialog = false })
+            {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
+                    {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Cập nhập mật khẩu", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            IconButton(onClick = { changePassword = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close")
+                            }
+                        }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = {
+                                    password = it
+                                    passwordError = null
+                                },
+                                placeholder = { Text("Mật khẩu") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 4.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = if (passwordError != null) errorRed else Color.LightGray,
+                                    focusedBorderColor = if (passwordError != null) errorRed else primaryBlue
+                                ),
+                                visualTransformation = PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                singleLine = true,
+                                isError = passwordError != null,
+                                enabled = !isLoading
+                            )
+
+                            if (passwordError != null) {
+                                Text(
+                                    text = passwordError!!,
+                                    color = errorRed,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    if (!isLoading) {
+                                        var valid = true
+                                        if (password.isBlank()) {
+                                            passwordError = "Mật khẩu không được để trống"
+                                            valid = false
+                                        } else if (password.length < 8) {
+                                            passwordError = "Mật khẩu tối thiểu 8 ký tự"
+                                            valid = false
+                                        } else if (!password.any { it.isUpperCase() }) {
+                                            passwordError = "Mật khẩu phải có ít nhất 1 chữ cái viết hoa"
+                                            valid = false
+                                        }
+                                        if (valid) {
+                                            isLoading = true
+                                            viewModel.updatePassword(password)
+                                            changePassword = false
+                                            authUser().clearUserSession(context)
+                                            navController.navigate("login") {
+                                                popUpTo("client_home") { inclusive = true }
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isLoading) Color.Gray else primaryBlue
+                                ),
+                                enabled = !isLoading
+                            ) {
+                                if (isLoading) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.height(20.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Cập nhập",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
                         }
                     }
                 }

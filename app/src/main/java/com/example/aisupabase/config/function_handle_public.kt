@@ -2,6 +2,8 @@ package com.example.aisupabase.config
 
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,8 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aisupabase.models.Tags
+import com.example.aisupabase.ui.theme.Purple100
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
@@ -88,7 +92,7 @@ object function_handle_public {
         Text(
             text = "${typeAccount?.title_tag ?: "Unknown"}",
             fontSize = 14.sp,
-            color = Color(0xFF4ECDC4),
+            color = Purple100,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
@@ -101,4 +105,65 @@ object function_handle_public {
             .decodeList<Tags>()
         return typeList.firstOrNull()
     }
+
+    @Composable
+    fun SlideInItem(
+        visible: Boolean,
+        modifier: Modifier = Modifier,
+        delayMillis: Int = 0,
+        content: @Composable () -> Unit
+    ) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = slideInVertically(
+                initialOffsetY = { it / 2 },
+                animationSpec = tween(durationMillis = 600, delayMillis = delayMillis)
+            ) + fadeIn(animationSpec = tween(durationMillis = 600, delayMillis = delayMillis)),
+            modifier = modifier
+        ) {
+            content()
+        }
+    }
+
+    @Composable
+    fun LazyLoadItem(
+        modifier: Modifier = Modifier,
+        content: @Composable () -> Unit
+    ) {
+        val transitionState = remember {
+            MutableTransitionState(false).apply { targetState = true }
+        }
+
+        AnimatedVisibility(
+            visibleState = transitionState,
+            enter = fadeIn(animationSpec = tween(350)) +
+                    slideInVertically(
+                        initialOffsetY = { it / 5 },
+                        animationSpec = tween(350, easing = FastOutSlowInEasing)
+                    ),
+            modifier = modifier
+        ) {
+            content()
+        }
+    }
+
+    fun formatToParagraphs(text: String, sentencePerParagraph: Int = 4): String {
+        val regex = Regex("""(?<=[.!?])\s+""") // tìm dấu . ! ? rồi khoảng trắng
+        val sentences = text.split(regex)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+        val paragraphs = sentences.chunked(sentencePerParagraph)
+            .map { chunk -> "    ${chunk.joinToString(" ")}" }
+
+        return paragraphs.joinToString("\n\n")
+    }
+
+    fun splitTextToSentences(text: String): List<String> {
+        val regex = Regex("(?<=[.!?])\\s*") // split after . ! ? with or without spaces
+        return text.split(regex)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+
 }

@@ -8,6 +8,7 @@ val Red = Color(0xFFFF5252)
 
 val errorRed = Color(0xFFD32F2F)
 val primaryBlue = Color(0xFF4361EE)
+val Purple100 = Color(0xFF4C1D95)
 
 // admin color
 val title_admin = Color(0xFF333333)

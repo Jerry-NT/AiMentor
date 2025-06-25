@@ -26,24 +26,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aisupabase.ui.theme.Purple100
 
 object question {
     @Composable
     fun Option_ABCD(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
         val backgroundColor = if (isSelected) {
-            Color(0xFF4ECDC4).copy(alpha = 0.1f)
+            Purple100.copy(alpha = 0.1f)
         } else {
             Color.Transparent
         }
 
         val borderColor = if (isSelected) {
-            Color(0xFF4ECDC4)
+            Purple100
         } else {
             Color(0xFFE2E8F0)
         }
 
         val textColor = if (isSelected) {
-            Color(0xFF2D5A5A)
+            Purple100
         } else {
             Color(0xFF4A5568)
         }
@@ -100,9 +101,9 @@ object question {
                     .focusRequester(focusRequester),
                 shape = RoundedCornerShape(16.dp),
             colors = outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF4ECDC4),
+                focusedBorderColor = Purple100,
                 unfocusedBorderColor = Color(0xFFE2E8F0),
-                cursorColor = Color(0xFF4ECDC4)
+                cursorColor =Purple100
             ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = keyboardType,

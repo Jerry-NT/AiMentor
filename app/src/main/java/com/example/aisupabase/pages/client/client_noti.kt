@@ -14,12 +14,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.aisupabase.R
 import com.example.aisupabase.controllers.notification_crud.cancelDailyNotification
 import com.example.aisupabase.controllers.notification_crud.createNotificationChannel
 import com.example.aisupabase.controllers.notification_crud.getScheduledNotificationDetails
@@ -97,6 +100,18 @@ fun AlarmSettingsScreen() {
         },
         containerColor = Color(0xFFF5F5F5)
     ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+
+        ) {
+            AsyncImage(
+                model = R.drawable.bg_7,
+                contentDescription = "Ảnh",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -221,6 +236,7 @@ fun AlarmSettingsScreen() {
                 }
             }
         }
+    }
     }
 }
 

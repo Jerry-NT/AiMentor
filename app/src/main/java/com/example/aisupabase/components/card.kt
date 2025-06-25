@@ -1,13 +1,17 @@
 package com.example.aisupabase.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +25,13 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +58,10 @@ import blogs
 import coil.compose.AsyncImage
 import com.example.aisupabase.R
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.config.function_handle_public.splitTextToSentences
 import com.example.aisupabase.models.Tags
+import com.example.aisupabase.pages.client.PricingPlan
+import com.example.aisupabase.ui.theme.Purple100
 import course_roadmaps
 import courses
 import kotlinx.coroutines.delay
@@ -129,7 +143,7 @@ object card_components {
                                         .weight(1f)
                                         .height(6.dp)
                                         .clip(RoundedCornerShape(3.dp)),
-                                    color = Color(0xFF4CAF50),
+                                    color = Color(0xFF4C1D95),
                                     trackColor = Color(0xFFE0E0E0),
                                 )
 
@@ -297,122 +311,135 @@ object card_components {
     }
 
     @Composable
-    fun tagItem(tags: Tags,count: Int,navController: NavController)
-    {
+    fun tagItem(tags: Tags, count: Int, navController: NavController, imageRes: Int) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            onClick = {navController.navigate("client_blog_by_tag/${tags.id}")},
             modifier = Modifier
                 .width(180.dp)
                 .height(180.dp),
-            ) {
+            onClick = { navController.navigate("client_blog_by_tag/${tags.id}") },
+            shape = RoundedCornerShape(16.dp),
+        ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF4C1D95), // Purple-900
-                                Color(0xFF6366F1)
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center // Canh giữa toàn bộ content
+            ) {
+                // Background Image
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = "Banner background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0x994C1D95),
+                                    Color(0xCC6366F1)
+                                ),
+                                radius = 300f
                             )
                         )
-                    )
-            ){
+                )
+
+                // Text content - Hoàn toàn center
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = tags.title_tag,
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 22.sp
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "${count} blog",
+                        text = "$count bài đăng",
                         fontSize = 14.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = Color.White.copy(alpha = 0.9f),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Medium
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Icon placeholder
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp)))
-                    {
-                        Image(
-                            painter = painterResource(id = R.drawable.pic_2),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(160.dp)
-                                .clip(CircleShape)
-                        )
-                    }
                 }
             }
-
         }
     }
 
     @Composable
-    fun roadmapItem(roadmap:course_roadmaps,count:Int,navController: NavController)
+    fun roadmapItem(roadmap:course_roadmaps,count:Int,navController: NavController,imageRes:Int)
     {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            onClick = {navController.navigate("client_course_by_roadmap/${roadmap.id}")},
             modifier = Modifier
                 .width(180.dp)
                 .height(180.dp),
+            onClick = { navController.navigate("client_course_by_roadmap/${roadmap.id}") },
+            shape = RoundedCornerShape(16.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF4C1D95), // Purple-900
-                                Color(0xFF6366F1)
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center // Canh giữa toàn bộ content
+            ) {
+                // Background Image
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = "Banner background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color(0x994C1D95),
+                                    Color(0xCC6366F1)
+                                ),
+                                radius = 300f
                             )
                         )
-                    )
-            ){
+                )
+
+                // Text content - Hoàn toàn center
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = roadmap.title,
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "${count} khóa học",
-                        fontSize = 12.sp,
                         color = Color.White,
-                        modifier = Modifier.padding(top = 4.dp)
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 22.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Icon placeholder
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp)))
-                    {
-                        Image(
-                            painter = painterResource(id = R.drawable.pic_1),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(160.dp)
-                                .clip(CircleShape)
-                        )
-                    }
+                    Text(
+                        text = "$count khóa học",
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.9f),
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
@@ -421,98 +448,149 @@ object card_components {
     @Composable
     fun LessonItem(
         lesson: lessons,
-        onClick: () -> Unit) {
+        onClick: () -> Unit,
+        isCompleted: Boolean
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
+                .padding(vertical = 8.dp)
                 .clickable { onClick() },
-            shape = RoundedCornerShape(12.dp),
-//        colors = CardDefaults.cardColors(
-//            containerColor = if (lesson.isCompleted)
-//                Color(0xFF4ECDC4).copy(alpha = 0.1f)
-//            else
-//                Color(0xFFF8F9FA)
-//        ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isCompleted)
+                    Color(0xFFF3E8FF) // Very light purple
+                else
+                    Color.White
+            ),
+
+            border = if (isCompleted) {
+                BorderStroke(1.dp, Color(0xFFE9D5FF))
+            } else null
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Play/Check Icon
-                Surface(
-                    shape = CircleShape,
-//                color = if (lesson.isCompleted)
-//                    Color(0xFF4ECDC4)
-//                else if (lesson.isLocked)
-//                    Color.Gray.copy(alpha = 0.3f)
-//                else
-                    color = Color(0xFF4ECDC4).copy(alpha = 0.2f),
-                    modifier = Modifier.size(40.dp)
+                // Animated Status Icon
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            brush = if (isCompleted) {
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF8B5CF6), // Purple-500
+                                        Color(0xFFEC4899)  // Pink-500
+                                    )
+                                )
+                            } else {
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFE9D5FF), // Purple-100
+                                        Color(0xFFFCE7F3)  // Pink-100
+                                    )
+                                )
+                            },
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
+                    val icon = when {
+                        isCompleted -> Icons.Default.CheckCircle
+                        else -> Icons.Default.PlayArrow
+                    }
+
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        //when {
-//                        lesson.isCompleted -> Icons.Default.Check
-//                        lesson.isLocked -> Icons.Default.Lock
-//                        else -> Icons.Default.PlayArrow },
+                        imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .wrapContentSize(Alignment.Center),
-//                    tint = if (lesson.isCompleted)
-//                        Color.White
-//                    else if (lesson.isLocked)
-//                        Color.Gray
-//                    else
-                        Color(0xFF4ECDC4)
+                        modifier = Modifier.size(28.dp),
+                        tint = if (isCompleted)
+                            Color.White
+                        else
+                            Color(0xFF8B5CF6)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(20.dp))
 
-                // Lesson Info
+                // Lesson Content
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = lesson.title_lesson,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-//                    color = if (lesson.isLocked)
-//                        Color.Gray
-//                    else
-                        color = Color(0xFF2D3748),
-                        maxLines = 2
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isCompleted)
+                            Color(0xFF111827)
+                        else
+                            Color(0xFF374151),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 26.sp
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
-                        text = "${lesson.duration}",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
+                    // Duration and status row
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF8B5CF6).copy(alpha = 0.1f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.DateRange,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = Color(0xFF8B5CF6)
+                                )
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                Text(
+                                    text = "${lesson.duration} phút",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF8B5CF6),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        if (isCompleted) {
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.1f)
+                            ) {
+                                Text(
+                                    text = "✓ Xong",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF10B981),
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
                 }
 
-                // Status indicator
-//            if (lesson.isCompleted) {
-//                Surface(
-//                    shape = RoundedCornerShape(12.dp),
-//                    color = Color(0xFF4ECDC4).copy(alpha = 0.2f)
-//                ) {
-//                    Text(
-//                        text = "Hoàn thành",
-//                        fontSize = 12.sp,
-//                        color = Color(0xFF4ECDC4),
-//                        fontWeight = FontWeight.Medium,
-//                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-//                    )
-//                }
-//            }
+                // Arrow indicator
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color(0xFF8B5CF6).copy(alpha = 0.6f)
+                )
             }
         }
     }
@@ -528,8 +606,7 @@ object card_components {
     fun CarouselBanner(
         bannerItems: List<BannerItem>,
         modifier: Modifier = Modifier,
-        autoScrollDuration: Long = 3000L
-    ) {
+        autoScrollDuration: Long = 3000L) {
         val pagerState = rememberPagerState(pageCount = { bannerItems.size })
 
         // Auto-scroll effect
@@ -547,7 +624,9 @@ object card_components {
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(200.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp),
+                pageSpacing = 8.dp
             ) { page ->
                 BannerCard(
                     item = bannerItems[page],
@@ -585,71 +664,189 @@ object card_components {
     @Composable
     fun BannerCard(
         item: BannerItem,
-        modifier: Modifier = Modifier
-    ) {
+        modifier: Modifier = Modifier) {
         Card(
             modifier = modifier,
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF4C1D95), // Purple-900
-                                Color(0xFF6366F1)  // Indigo-500
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Background Image
+                Image(
+                    painter = painterResource(id = item.imageRes),
+                    contentDescription = "Banner background",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                // Gradient overlay để text dễ đọc hơn
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xCC4C1D95), // Purple-900 with stronger transparency
+                                    Color(0xCC6366F1)  // Indigo-500 with stronger transparency
+                                )
                             )
                         )
-                    )
-            ) {
-                Row(
+                )
+
+                // Text content
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    // Left side - Text content
+                    Text(
+                        text = item.title,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 28.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = item.subtitle,
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
+    }
+
+
+    @Composable
+    fun PricingCard(
+        type_account: String?,
+        plan: PricingPlan,
+        allPlans: List<PricingPlan>,
+        modifier: Modifier = Modifier,
+        onClick: () -> Unit) {
+
+        val currentTypeMaxCount = allPlans.find { it.name == type_account }?.max_count ?: 0
+
+        // Button enable logic
+        val isDisabled = when {
+            plan.name == type_account -> true // Disable button for current plan
+            type_account == "Basic" -> plan.name == "Basic"
+            else -> plan.name == "Basic" || plan.max_count < currentTypeMaxCount
+        }
+
+        Card(
+            modifier = modifier,
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 12.dp
+            )
+        ) {
+            Column {
+                // Header with gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = plan.gradientColors
+                            ),
+                            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                        )
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.Center
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = item.title,
-                            color = Color.White,
-                            fontSize = 24.sp,
+                            text = plan.name,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            lineHeight = 28.sp
+                            color = Color.White
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
-
+                        val displayPrice = if (plan.price % 1.0 == 0.0) {
+                            plan.price.toInt().toString() // loại bỏ .0 nếu là số nguyên
+                        } else {
+                            "%.2f".format(plan.price)     // giữ 2 chữ số thập phân nếu có
+                        }
                         Text(
-                            text = item.subtitle,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
+                            text = "$displayPrice VNĐ",
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
 
+                        Text(
+                            text = plan.period,
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
+                }
 
+                // Content area
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(24.dp)
+                ) {
+                    // Features list
+                    val features = splitTextToSentences(plan.content)
+                    features.forEach { feature ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = plan.gradientColors.first(),
+                                modifier = Modifier.size(20.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = feature,
+                                fontSize = 16.sp,
+                                color = Color(0xFF2D3748),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Right side - Illustration
-                    Box(
+                    // Get Started Button
+                    Button(
+                        onClick = onClick,
+                        enabled = !isDisabled,
                         modifier = Modifier
-                            .size(120.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = plan.buttonColor
+                        ),
+                        shape = RoundedCornerShape(25.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = item.imageRes),
-                            contentDescription = "Banner illustration",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
+                        Text(
+                            text = "Nâng cấp",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            letterSpacing = 1.sp
                         )
                     }
                 }

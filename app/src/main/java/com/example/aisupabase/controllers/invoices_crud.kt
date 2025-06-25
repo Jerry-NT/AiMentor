@@ -21,4 +21,14 @@ class invoicesRepository(private val supabase: SupabaseClient) {
             return@withContext InvoiceResult.Error(e)
         }
     }
+
+    suspend fun addInvoice(invoice: invoices): InvoiceResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val result = supabase.postgrest["invoices"].insert(invoice)
+            return@withContext InvoiceResult.Success(Unit, result)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return@withContext InvoiceResult.Error(e)
+        }
+    }
 }

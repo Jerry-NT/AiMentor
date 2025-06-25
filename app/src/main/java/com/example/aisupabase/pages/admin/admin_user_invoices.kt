@@ -195,16 +195,7 @@ fun invoicesScreen(
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
-                                    Text(
-                                        text = "Tiền tệ: ${invoice.currency}",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
-                                    Text(
-                                        text = "Phương thức: ${invoice.payment_method}",
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.padding(bottom = 16.dp)
-                                    )
+
                                     Text(
                                         text = "Trạng thái: ${invoice.status}",
                                         fontSize = 14.sp,

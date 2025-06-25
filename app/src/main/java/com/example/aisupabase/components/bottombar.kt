@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.aisupabase.ui.theme.Purple100
 
 object bottombar{
     @Composable
@@ -25,7 +26,7 @@ object bottombar{
     ) {
         val items = listOf(
             Triple("Trang chủ", Icons.Default.Home, "client_home"),
-            Triple("Khóa học", Icons.Default.AccountBox, "client_course"),
+            Triple("Tài liệu", Icons.Default.AccountBox, "client_course"),
             Triple("Tìm kiếm", Icons.Default.Search, "client_search"),
             Triple("Blogs", Icons.Default.Edit, "client_blog"),
             Triple("Cài đặt", Icons.Default.Settings, "client_profile")
@@ -42,8 +43,8 @@ object bottombar{
                         navController.navigate(route)
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(0xFF4ECDC4),
-                        selectedTextColor = Color(0xFF4ECDC4),
+                        selectedIconColor = Purple100,
+                        selectedTextColor = Purple100,
                         unselectedIconColor = Color.Gray,
                         unselectedTextColor = Color.Gray,
                     )

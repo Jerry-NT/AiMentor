@@ -1,5 +1,6 @@
 package com.example.aisupabase.pages.client
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -20,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -33,11 +35,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.config.function_handle_public.formatToParagraphs
 import com.example.aisupabase.controllers.LearnRepository
 import com.example.aisupabase.controllers.LessonRepository
 import com.example.aisupabase.controllers.LessonResult
 import com.example.aisupabase.controllers.LearnResult
 import com.example.aisupabase.controllers.authUser
+import com.example.aisupabase.ui.theme.Purple100
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -128,7 +132,7 @@ fun LessonDetailView(
     val session = authUser().getUserSession(context)
     val id_user = session["id"] as Int
 
-    LaunchedEffect(id,id_user) {
+    LaunchedEffect(id, id_user) {
         viewModel.getLessonByID(id, id_user)
     }
 
@@ -141,7 +145,11 @@ fun LessonDetailView(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = Color.Black)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color.Black
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -157,7 +165,6 @@ fun LessonDetailView(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = 80.dp)
                 ) {
                     item {
                         Card(
@@ -166,122 +173,148 @@ fun LessonDetailView(
                                 .offset(y = (-20).dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                         ) {
-                            Column(
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp)
-                            ) {
-                                Text(
-                                    text = ListLesson[0].title_lesson,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2D3748),
-                                    lineHeight = 36.sp,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 20.dp),
-                                    color = Color.Gray.copy(alpha = 0.2f)
-                                )
-
-                                val jsonLesson = try {
-                                    JSONObject(ListLesson[0].content_lesson)
-                                } catch (e: Exception) {
-                                    null
-                                }
-
-                                if (jsonLesson != null) {
-                                    val contentLession = jsonLesson.optString("content_lession")
-                                    val exampleObj = jsonLesson.optJSONObject("example")
-                                    val desShort = exampleObj?.optString("des_short") ?: ""
-                                    val code = exampleObj?.optString("code") ?: ""
-
-                                    Text(
-                                        text = contentLession,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF4A5568),
-                                        lineHeight = 28.sp,
-                                        textAlign = TextAlign.Justify,
-                                        modifier = Modifier.padding(bottom = 24.dp)
-                                    )
-
-                                    Text(
-                                        text = desShort,
-                                        fontSize = 16.sp,
-                                        color = Color(0xFF4A5568),
-                                        lineHeight = 28.sp,
-                                        textAlign = TextAlign.Justify,
-                                        modifier = Modifier.padding(bottom = 24.dp)
-                                    )
-
-                                    if (code != "") {
-                                        Surface(
-                                            color = Color(0xFFF5F5F5),
-                                            shape = RoundedCornerShape(8.dp),
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(bottom = 24.dp)
-                                        ) {
-                                            Text(
-                                                text = code,
-                                                fontSize = 16.sp,
-                                                color = Color(0xFF2D3748),
-                                                lineHeight = 24.sp,
-                                                fontFamily = FontFamily.Monospace,
-                                                modifier = Modifier.padding(16.dp)
+                                    .background(
+                                        brush = Brush.horizontalGradient(
+                                            colors = listOf(
+                                                Color(0x99957CDC), // Purple-900
+                                                Color(0x99F3EFEF)// Indigo-500
                                             )
-                                        }
+                                        )
+                                    )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp)
+                                ) {
+                                    Text(
+                                        text = ListLesson[0].title_lesson,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2D3748),
+                                        lineHeight = 36.sp,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = 20.dp),
+                                        color = Color.Gray.copy(alpha = 0.2f)
+                                    )
+
+                                    val jsonLesson = try {
+                                        JSONObject(ListLesson[0].content_lesson)
+                                    } catch (e: Exception) {
+                                        null
                                     }
 
-                                    Spacer(modifier = Modifier.height(32.dp))
+                                    if (jsonLesson != null) {
+                                        val contentLession = formatToParagraphs(jsonLesson.optString("content_lession"))
+                                        val exampleObj = jsonLesson.optJSONObject("example")
+                                        val desShort = formatToParagraphs(exampleObj?.optString("des_short") ?: "")
+                                        val code = exampleObj?.optString("code") ?: ""
+
+
+                                        Text(
+                                            text = contentLession,
+                                            fontSize = 16.sp,
+                                            color = Color(0xFF4A5568),
+                                            lineHeight = 28.sp,
+                                            textAlign = TextAlign.Justify,
+                                            modifier = Modifier.padding(bottom = 24.dp)
+                                        )
+
+                                        Text(
+                                            text = desShort,
+                                            fontSize = 16.sp,
+                                            color = Color(0xFF4A5568),
+                                            lineHeight = 28.sp,
+                                            textAlign = TextAlign.Justify,
+                                            modifier = Modifier.padding(bottom = 24.dp)
+                                        )
+
+                                        if (code != "") {
+                                            Surface(
+                                                color = Color(0xFFF5F5F5),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = 24.dp)
+                                            ) {
+                                                Text(
+                                                    text = code,
+                                                    fontSize = 16.sp,
+                                                    color = Color(0xFF2D3748),
+                                                    lineHeight = 24.sp,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    modifier = Modifier.padding(16.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(32.dp))
+
+                                        if (!isCompleted) {
+                                            Button(
+                                                onClick = {
+                                                    viewModel.completeLesson(id_user, id)
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(56.dp)
+                                                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                                                shape = RoundedCornerShape(16.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Purple100
+                                                )
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    "Hoàn thành",
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        } else {
+                                            Button(
+                                                onClick = {
+
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(56.dp)
+                                                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                                                shape = RoundedCornerShape(16.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Purple100
+                                                )
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    "Đã hoàn thành",
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    if (!isCompleted) {
-                        Button(
-                            onClick = {
-                                viewModel.completeLesson(id_user, id)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .padding(horizontal = 24.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4ECDC4))
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Hoàn thành", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .padding(horizontal = 24.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Đã hoàn thành",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Gray
-                            )
-                        }
-                    }
                 }
             }
         }
     }
-}

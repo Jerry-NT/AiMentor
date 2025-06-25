@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import com.example.aisupabase.components.card_components.roadmapItem
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
@@ -159,6 +160,12 @@ fun ClientRMHomeView(
     val currentRoute = navBackStackEntry?.destination?.route
     var selectedIndex by remember { mutableStateOf(routeToIndex[currentRoute] ?: 0) }
 
+    val imageList = (0..5).map { index ->
+        val imageName = "image_$index"
+        val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
+        if (resId != 0) resId else R.drawable.background  // fallback nếu không tìm thấy
+    }
+
     val roadmapCourseCounts by viewModel.roadmapCourseCounts.collectAsState()
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
@@ -192,7 +199,7 @@ fun ClientRMHomeView(
                     )
             ) {
                 AsyncImage(
-                    model = R.drawable.pic_1,
+                    model = R.drawable.bg_3,
                     contentDescription = "Ảnh",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -217,16 +224,15 @@ fun ClientRMHomeView(
                         )
                     }
 
-                    items(ListRoadMap) { roadmap ->
-                        if(roadmap.title !== "Người dùng")
-                        {
+                    items(ListRoadMap.take(2).withIndex().toList()) { indexedValue ->
+                        val index = indexedValue.index
+                        val roadmap = indexedValue.value
                         val count = roadmapCourseCounts[roadmap.id ?: 0] ?: 0
+                        val idImage = imageList.getOrNull(index) ?: R.drawable.background
                         LaunchedEffect(roadmap.id) {
-                            viewModel.loadCourseCountForRoadmap(roadmap.id ?: 0)
+                            viewModel.loadCourseCountForRoadmap(roadmap.id?:0)
                         }
-                        roadmapItem(roadmap, count,navController)
-                        }
-
+                        roadmapItem(roadmap, count,navController,idImage)
                     }
                 }
             }

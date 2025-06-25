@@ -41,7 +41,7 @@ public class authUser{
             "role" to sharedPref.getString("role", null),
             "type_account" to sharedPref.getString("type_account", null),
             "phone" to sharedPref.getString("phone", null),
-            "id_type_account" to sharedPref.getInt("id_type_acount",0)
+            "id_type_account" to sharedPref.getInt("id_type_account",0)
         )
     }
 

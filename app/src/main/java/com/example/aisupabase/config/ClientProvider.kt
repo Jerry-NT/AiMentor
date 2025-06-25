@@ -5,8 +5,6 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 
-
-
 object NativeKeys {
     init {
         System.loadLibrary("aisupabase")
@@ -16,6 +14,7 @@ object NativeKeys {
     external fun CloudinaryKey(): String
     external fun CloudinarySecret(): String
     external fun CloudinaryCloudName(): String
+    external fun geminiKey(): String
 }
 
 object SupabaseClientProvider {
@@ -38,3 +37,9 @@ object CloudinaryClientProvider {
     fun getCloudinaryInstance() = Cloudinary(config)
 }
 
+object getGeminiKey{
+    fun returnkey():String
+    {
+        return NativeKeys.geminiKey()
+    }
+}

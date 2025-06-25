@@ -59,6 +59,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.aisupabase.components.card_components.LessonItem
 import com.example.aisupabase.config.SupabaseClientProvider
+import com.example.aisupabase.config.function_handle_public.formatToParagraphs
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
 import com.example.aisupabase.controllers.LearnRepository
@@ -67,6 +68,7 @@ import com.example.aisupabase.controllers.LessonRepository
 import com.example.aisupabase.controllers.LessonResult
 import com.example.aisupabase.controllers.authUser
 import com.example.aisupabase.models.Users
+import com.example.aisupabase.ui.theme.Purple100
 import courses
 import io.github.jan.supabase.SupabaseClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -165,6 +167,18 @@ class CourseDetailViewModel(
         }
     }
 
+    private val _completedLessons = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+    val completedLessons: StateFlow<Map<Int, Boolean>> = _completedLessons
+
+    fun checkLessonCompleted(id_user: Int, id_lesson: Int) {
+        viewModelScope.launch {
+            val result = learnRepository.checkLessonCompleted(id_user, id_lesson)
+            _completedLessons.value = _completedLessons.value.toMutableMap().apply {
+                put(id_lesson, result)
+            }
+        }
+    }
+
     }
 
 class courseDetailViewModelFactory(private val supabase: SupabaseClient) : ViewModelProvider.Factory {
@@ -214,17 +228,20 @@ fun CourseDetailView(
     val listCourse by viewModel.coursesList.collectAsState()
     val listLesson by viewModel.lessonsList.collectAsState()
     val listUser by viewModel.userList.collectAsState()
+    val completedLessons by viewModel.completedLessons.collectAsState()
 
-    var textbutton by remember { mutableStateOf("Đăng ký học") }
+
+
+    var textbutton by remember { mutableStateOf("Đăng ký") }
 
     LaunchedEffect(id_user, id) {
         viewModel.checkSub(id_user, id) { exists ->
             if (exists) {
                 viewModel.continueLesson(id_user, id) { nextLesson ->
-                    textbutton = if (nextLesson == null) "Hoàn thành" else "Tiếp tục học"
+                    textbutton = if (nextLesson == null) "Hoàn thành" else "Tiếp tục"
                 }
             } else {
-                textbutton = "Đăng ký học"
+                textbutton = "Đăng ký"
             }
         }
     }
@@ -358,15 +375,16 @@ fun CourseDetailView(
 
                             // Course Description
                             Text(
-                                text = "Mô tả khóa học",
+                                text = "Mô tả tài liệu",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF2D3748),
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
 
+                            val formattedContent = formatToParagraphs(listCourse[0].des_course,1)
                             Text(
-                                text = listCourse[0].des_course,
+                                text = formattedContent,
                                 fontSize = 16.sp,
                                 lineHeight = 24.sp,
                                 color = Color(0xFF4A5568),
@@ -384,27 +402,29 @@ fun CourseDetailView(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Nội dung khóa học",
+                                        text = "Nội dung tài liệu",
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF2D3748)
                                     )
 
                                     Text(
-                                        text = "${listLesson.size} bài học",
+                                        text = "${listLesson.size} nội dung",
                                         fontSize = 14.sp,
                                         color = Color.Gray
                                     )
                                 }
 
                                 // Lessons List
-                                listLesson.forEachIndexed { index, lesson ->
+                                listLesson.forEach { lesson ->
+                                    val isComplete = completedLessons[lesson.id] ?: false
+                                    LaunchedEffect(lesson.id) {
+                                        viewModel.checkLessonCompleted(id_user, lesson.id as Int)
+                                    }
                                     LessonItem(
                                         lesson = lesson,
-                                        onClick = {
-                                            navController.navigate("client_detail_lesson/${lesson.id}")
-                                            // Navigate to lesson detail
-                                        }
+                                        onClick = { navController.navigate("client_detail_lesson/${lesson.id}") },
+                                        isComplete
                                     )
                                 }
 
@@ -416,7 +436,7 @@ fun CourseDetailView(
                                         text = "Đã hoàn thành",
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF4ECDC4),
+                                        color = Purple100,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(56.dp)
@@ -444,7 +464,7 @@ fun CourseDetailView(
                                             .height(56.dp),
                                         shape = RoundedCornerShape(16.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF4ECDC4)
+                                            containerColor = Purple100
                                         )
                                     ) {
                                         Icon(

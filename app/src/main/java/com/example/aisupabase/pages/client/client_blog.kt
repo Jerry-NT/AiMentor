@@ -160,7 +160,7 @@ fun BlogHomeView(
                     )
             ) {
                 AsyncImage(
-                    model = R.drawable.pic_1,
+                    model = R.drawable.bg_1,
                     contentDescription = "Ảnh",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -177,7 +177,7 @@ fun BlogHomeView(
 
                     item(span = { GridItemSpan(2) }) {
                         Text(
-                            text = "Danh sách khóa học",
+                            text = "Danh sách bài đăng",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,

@@ -46,6 +46,13 @@ import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.Alignment
 import com.example.aisupabase.components.card_components.roadmapItem
 import com.example.aisupabase.controllers.CourseRepository
 import com.example.aisupabase.controllers.CourseResult
@@ -172,6 +179,33 @@ fun ClientRMHomeView(
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Danh sách lộ trình",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        },
         bottomBar = {
             BottomNavigationBar(
                 selectedIndex = selectedIndex,
@@ -213,16 +247,6 @@ fun ClientRMHomeView(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item(span = { GridItemSpan(2) }) {
-                        Text(
-                            text = "Danh sách lộ trình",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            lineHeight = 32.sp,
-                            modifier = Modifier.padding(bottom = 20.dp)
-                        )
-                    }
 
                     items(ListRoadMap.take(2).withIndex().toList()) { indexedValue ->
                         val index = indexedValue.index

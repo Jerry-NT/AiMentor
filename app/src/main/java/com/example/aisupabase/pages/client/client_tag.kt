@@ -46,6 +46,13 @@ import kotlinx.coroutines.launch
 import kotlin.collections.get
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.Alignment
 import com.example.aisupabase.components.card_components.tagItem
 import com.example.aisupabase.controllers.BlogRepository
 import com.example.aisupabase.controllers.BlogResult
@@ -137,13 +144,10 @@ fun ClientTagHomeView(
     navController: NavController,
     supabase: SupabaseClient,
     viewModel: ClientTagViewModel = viewModel(factory = ClientTagViewModelFactory(supabase))
-)
-{
+) {
     val ListTag by viewModel.tagList.collectAsState()
-    // thông tin user
     val context = LocalContext.current
 
-    // bottom bar setup
     val routeToIndex = mapOf(
         "client_home" to 0,
         "client_course" to 1,
@@ -161,13 +165,40 @@ fun ClientTagHomeView(
     val imageListBlog = (0..5).map { index ->
         val imageName = "image_blog_$index"
         val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
-        if (resId != 0) resId else R.drawable.background  // fallback nếu không tìm thấy
+        if (resId != 0) resId else R.drawable.background
     }
     LaunchedEffect(currentRoute) {
         selectedIndex = routeToIndex[currentRoute] ?: 0
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Danh sách loại blog",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        },
         bottomBar = {
             BottomNavigationBar(
                 selectedIndex = selectedIndex,
@@ -175,15 +206,14 @@ fun ClientTagHomeView(
                 navController
             )
         }
-    ){ paddingValues ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .padding(paddingValues)
-        ){
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-
             ) {
                 AsyncImage(
                     model = R.drawable.bg_4,
@@ -200,17 +230,6 @@ fun ClientTagHomeView(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item(span = { GridItemSpan(2) }) {
-                        Text(
-                            text = "Danh sách loại blog",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            lineHeight = 32.sp,
-                            modifier = Modifier.padding(bottom = 20.dp)
-                        )
-                    }
-
                     itemsIndexed(ListTag) { index, tag ->
                         val count = tagCounts[tag.id] ?: 0
                         val idImage = imageListBlog.getOrNull(index) ?: R.drawable.background
@@ -223,7 +242,6 @@ fun ClientTagHomeView(
                     }
                 }
             }
-
         }
     }
 }

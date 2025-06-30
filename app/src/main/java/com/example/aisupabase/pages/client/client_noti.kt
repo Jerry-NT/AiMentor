@@ -7,7 +7,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
@@ -38,7 +40,7 @@ data class AlarmItem(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AlarmSettingsScreen() {
+fun AlarmSettingsScreen(navController: NavController) {
     // Sample alarm data
     val context = LocalContext.current
 
@@ -78,10 +80,14 @@ fun AlarmSettingsScreen() {
                         )
                     }
                 },
-
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     FloatingActionButton(
-                        onClick = {  showTimeDialog = true },
+                        onClick = { showTimeDialog = true },
                         modifier = Modifier.size(36.dp),
                         containerColor = Color(0xFFFF4444),
                         contentColor = Color.White
@@ -282,5 +288,5 @@ fun TimePickerDialog(
 }
 @Composable
 fun Client_Noti(navController: NavController) {
-        AlarmSettingsScreen()
+        AlarmSettingsScreen(navController = navController)
 }

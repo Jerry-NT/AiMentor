@@ -158,7 +158,7 @@ class LearnRepository(private val supabase: SupabaseClient){
             val now = java.time.LocalDate.now()
             if (streakList.isEmpty()) {
                 // No streak, create new
-                val newStreak = streaks(null, id_user, 1, now.toString())
+                val newStreak = streaks(null, 1, id_user, now.toString())
                 val insertResult = supabase.postgrest["streaks"].insert(newStreak)
                 return@withContext LearnResult.Success(newStreak, insertResult)
             } else {

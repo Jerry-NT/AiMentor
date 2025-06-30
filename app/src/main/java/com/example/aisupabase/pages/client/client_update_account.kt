@@ -9,6 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -300,8 +303,35 @@ fun PricingPlansScreen(
     LaunchedEffect(Unit) {
         viewModel.initializeGooglePay(context)
     }
-    Box(
-        modifier = Modifier
+    Scaffold (
+        topBar = {
+            TopAppBar(
+                title = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Nâng Cấp Tài Khoản",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Black
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        }
+    ){ paddingValues ->
+        Box(
+        modifier = Modifier.padding(paddingValues)
             .fillMaxSize()
             .background(Color(0xFFF5F5F5)),
         contentAlignment = Alignment.Center
@@ -444,7 +474,8 @@ fun PricingPlansScreen(
 
             }
         }
-    }
+    }}
+
 }
 
 

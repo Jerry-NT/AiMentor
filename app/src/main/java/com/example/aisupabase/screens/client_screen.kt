@@ -255,6 +255,7 @@ class homeViewModel(
             _error.value = null
             when (val result = learnRepository.getStreak(id_user)) {
                 is LearnResult.Success -> {
+                Log.d("Streak", "getStreak: ${result.data}")
                     _StreakList.value = result.data ?: emptyList()
                 }
 
@@ -273,7 +274,10 @@ class homeViewModel(
                 is LearnResult.Success -> {
                      getStreak(id_user)
                 }
-                is LearnResult.Error -> _error.value = result.exception.message
+                is LearnResult.Error -> {
+                    _error.value = result.exception.message
+                }
+
             }
             _isLoading.value = false
         }
@@ -517,19 +521,14 @@ fun ClientHomeView(
                                     horizontalArrangement = Arrangement.SpaceBetween
 
                                 ) {
-                                    listStreak.forEach { streak ->
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-
-                                            Text(
-                                                text = "🔥",
-                                                fontSize = 24.sp
-                                            )
+                                    if (listStreak.isEmpty()) {
+                                        // No streak yet, show default
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(text = "🔥", fontSize = 24.sp)
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
                                                 Text(
-                                                    text = "${streak.count}",
+                                                    text = "0",
                                                     fontSize = 24.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = Color.White
@@ -540,29 +539,60 @@ fun ClientHomeView(
                                                     color = Color.White
                                                 )
                                             }
-
                                         }
-                                        val createdAtDate =
-                                            LocalDate.parse(streak.created_at.substring(0, 10))
-                                        val today = LocalDate.now()
-
-                                        if (createdAtDate.isBefore(today)) {
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = Color(0xFF6366F1),
-                                                modifier = Modifier.size(48.dp)
-                                                    .clickable(onClick = {viewModel.checkStreak(
-                                                        userid as Int
-                                                    )})
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.PlayArrow,
-                                                    contentDescription = null,
-                                                    tint = Color.White,
-                                                    modifier = Modifier
-                                                        .size(24.dp)
-                                                        .wrapContentSize(Alignment.Center)
-                                                )
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = Color(0xFF6366F1),
+                                            modifier = Modifier.size(48.dp)
+                                                .clickable(onClick = { viewModel.checkStreak(userid as Int) })
+                                        ) {
+                                            Icon(
+                                                Icons.Default.PlayArrow,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .wrapContentSize(Alignment.Center)
+                                            )
+                                        }
+                                    } else {
+                                        listStreak.forEach { streak ->
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(text = "🔥", fontSize = 24.sp)
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column {
+                                                    Text(
+                                                        text = "${streak.count}",
+                                                        fontSize = 24.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White
+                                                    )
+                                                    Text(
+                                                        text = "Chuỗi bùng nổ",
+                                                        fontSize = 14.sp,
+                                                        color = Color.White
+                                                    )
+                                                }
+                                            }
+                                            val createdAtDate = LocalDate.parse(streak.created_at.substring(0, 10))
+                                            val today = LocalDate.now()
+                                            // Always show the check-in button if not checked in today
+                                            if (createdAtDate.isBefore(today)) {
+                                                Surface(
+                                                    shape = CircleShape,
+                                                    color = Color(0xFF6366F1),
+                                                    modifier = Modifier.size(48.dp)
+                                                        .clickable(onClick = { viewModel.checkStreak(userid as Int) })
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier
+                                                            .size(24.dp)
+                                                            .wrapContentSize(Alignment.Center)
+                                                    )
+                                                }
                                             }
                                         }
                                     }

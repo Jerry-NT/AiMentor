@@ -251,8 +251,8 @@ fun RegistrationScreen(navController: NavController) {
 
                             if (valid) {
                                 Register(context,email, fullName, password, phoneNumber,onLoadingChange = { isLoading = it })
+                                navController.navigate("login")
                             }
-
                             }
                         },
                         modifier = Modifier

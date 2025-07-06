@@ -125,6 +125,10 @@ class searchViewModel(
             _isLoading.value = false
         }
     }
+    fun clearSearchResults() {
+        _coursesList.value = emptyList()
+        _blogsList.value = emptyList()
+    }
 }
 
 // viewFactory
@@ -219,10 +223,14 @@ fun SearchHomeView(
                         inputField = {
                             SearchBarDefaults.InputField(
                                 query = textFieldState.text.toString(),
-                                onQueryChange = { textFieldState.edit { replace(0, length, it) } },
+                                onQueryChange = {
+                                    textFieldState.edit { replace(0, length, it) }
+                                    if (it.isBlank()) {
+                                        viewModel.clearSearchResults()
+                                    }
+                                },
                                 onSearch = {
                                     onSearch(textFieldState.text.toString())
-                                    expanded = false
                                 },
                                 expanded = expanded,
                                 onExpandedChange = { expanded = it },

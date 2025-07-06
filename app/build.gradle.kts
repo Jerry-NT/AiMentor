@@ -66,6 +66,7 @@ android {
             version = "3.22.1"
         }
     }
+    ndkVersion = "27.0.12077973"
 }
 
 dependencies {
@@ -109,4 +110,6 @@ dependencies {
     implementation ("com.google.guava:guava:32.1.2-android")
 
     implementation ("com.google.android.gms:play-services-wallet:19.2.1")
+    implementation("androidx.compose.material:material-icons-extended")
+
 }

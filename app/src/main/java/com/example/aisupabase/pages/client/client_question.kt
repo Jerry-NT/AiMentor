@@ -231,6 +231,7 @@ fun ChatScreen(
 
     LaunchedEffect(shouldCallGemini) {
         if (shouldCallGemini) {
+//            Log.d("fullfinal",fullPrompt)
             try {
                 viewModel.getRoadMapByTitle("Người dùng")
                 val jsonResult = JSONObject(fullPrompt)

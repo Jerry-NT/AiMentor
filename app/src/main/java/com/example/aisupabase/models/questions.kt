@@ -6,9 +6,11 @@ enum class question_option_type {
     abcd
 }
 @Serializable
-data class questions(
-    val id: Int? = null,
-    val title: String,
-    val option: String,
-    val type_option: question_option_type,
+data class Question(
+    val question: String,
+    val A: String,
+    val B: String,
+    val C: String,
+    val D: String,
+    val choice: String // Đáp án đúng
 )

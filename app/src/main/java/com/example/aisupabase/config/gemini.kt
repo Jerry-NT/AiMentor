@@ -1,5 +1,6 @@
 package com.example.aisupabase.config
 
+import Question
 import com.example.aisupabase.models.Content
 import com.example.aisupabase.models.GeminiRequest
 import com.example.aisupabase.models.GeminiResponse
@@ -13,6 +14,20 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import android.util.Base64
+import android.util.Log
+import io.ktor.client.statement.bodyAsText
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.jsonArray
+import java.io.File
+
+@Serializable
+data class QuestionsResponse(
+    val questions: List<Question>
+)
+
 
 class GeminiService {
 
@@ -30,317 +45,560 @@ class GeminiService {
     var final_export: String? = null
         private set
 
-    // Thêm biến để track thông tin đã thu thập
-    private var collectedInfo = mutableMapOf<String, String>()
+    // Biến để lưu URL ảnh course
+    private var courseImageUrl: String? = null
+
 
     suspend fun generateText(prompt: String, chatHistory: List<ChatMessage> = emptyList()): String {
         // Tạo conversation context từ chat history
         val conversationContext = buildConversationContext(chatHistory)
+        val collectedInfoAnalysis = analyzeCollectedInfo(chatHistory)
 
-        // Tạo system prompt với context
-        // Cải thiện system prompt trong method generateText()
-        // Universal Course Estimation System cho tất cả ngành nghề
         val systemPrompt = """
-Bạn là một chuyên gia thiết kế khóa học đa ngành với 15+ năm kinh nghiệm, chuyên tạo ra các khóa học thực tiễn cho mọi lĩnh vực.
+        🚀 **BẠN LÀ CHUYÊN GIA TẠO KHÓA HỌC IT THÔNG MINH**
+        
+        ═══════════════════════════════════════════════════════════════════════════════════════
+        
+        ## 🎯 **NHIỆM VỤ CHÍNH**
+        Thu thập thông tin chi tiết và tạo khóa học IT chất lượng cao, thực tế và có tính ứng dụng
+        
+        ## 📊 **PHÂN TÍCH TÌNH HUỐNG HIỆN TẠI**
+        $collectedInfoAnalysis
+        
+        ## 🔍 **THÔNG TIN CẦN THU THẬP (Theo độ ưu tiên)**
+        
+        ### **Tier 1 - Thông tin cốt lõi (BẮT BUỘC)**
+        1. **Chủ đề chính**: Lĩnh vực IT cụ thể (Web Dev, Mobile, AI/ML, DevOps, Data Science, Cybersecurity)
+        2. **Mục tiêu học tập**: 
+           - 🎯 Awareness (Hiểu biết cơ bản)
+           - 🛠️ Skill-building (Xây dựng kỹ năng)
+           - 🏆 Mastery (Thành thạo)
+           - 💼 Career-ready (Sẵn sàng nghề nghiệp)
+        3. **Trình độ hiện tại**: 
+           - 🌱 Absolute Beginner (Chưa biết gì)
+           - 📚 Some Knowledge (Có kiến thức cơ bản)
+           - 🔧 Intermediate (Trung bình)
+           - ⚡ Advanced (Nâng cao)
+        
+        ### **Tier 2 - Thông tin tùy chỉnh (QUAN TRỌNG)**
+        4. **Thời gian cam kết**: 
+           - ⚡ Crash Course (1-2 tuần)
+           - 📖 Standard (3-4 tuần)
+           - 🎓 Comprehensive (2-3 tháng)
+           - 🏆 Mastery (6+ tháng)
+        5. **Phong cách học**: 
+           - 📖 Theory-focused (Lý thuyết)
+           - 🛠️ Hands-on (Thực hành)
+           - 📊 Project-based (Dự án)
+           - 🎮 Interactive (Tương tác)
+        
+        ### **Tier 3 - Thông tin nâng cao (TỐI ƯU)**
+        6. **Ứng dụng thực tế**: 
+           - 🏠 Personal Projects
+           - 💼 Current Job
+           - 🚀 Career Switch
+           - 📈 Business/Startup
+        7. **Công cụ/Framework ưu tiên**: Yêu cầu specific tools
+        8. **Ngân sách thời gian**: Số giờ/tuần có thể học
+        
+        ## 🧠 **CHIẾN LƯỢC HỎI THÔNG TIN THÔNG MINH**
+        
+        ### **Giai đoạn 1: Khám phá (Discovery)**
+        - Sử dụng câu hỏi mở: "Bạn muốn làm gì với kiến thức này?"
+        - Tìm hiểu motivation: "Điều gì khiến bạn quan tâm đến [chủ đề]?"
+        - Đánh giá background: "Bạn đã từng tiếp xúc với [related topic] chưa?"
+        
+        ### **Giai đoạn 2: Làm rõ (Clarification)**
+        - Đi sâu vào details: "Khi nói về [topic], bạn có muốn tập trung vào [specific aspect]?"
+        - Scenarios: "Ví dụ, bạn có muốn học để [use case A] hay [use case B]?"
+        - Timeline: "Bạn muốn đạt được mục tiêu này trong khoảng thời gian nào?"
+        
+        ### **Giai đoạn 3: Xác nhận (Confirmation)**
+        - Tóm tắt: "Vậy tôi hiểu bạn muốn [summary]..."
+        - Double-check: "Có đúng là bạn ưu tiên [priority] hơn [alternative]?"
+        - Final check: "Còn gì khác tôi cần biết không?"
+        
+        ## 📚 **CHUẨN TẠO KHÓA HỌC CHẤT LƯỢNG CAO**
+        
+        ### **1. Cấu trúc khóa học (Course Structure)**
+        - **Tiêu đề**: [10-248 chars] - Hấp dẫn, SEO-friendly, nói rõ value proposition
+        - **Mô tả**: [10-498 chars] - Giải thích rõ outcomes, benefits, target audience
+        - **Số bài học**: 4-10 bài (tùy theo complexity và timeline)
+        - **Tổng thời gian**: Realistic estimation dựa trên content depth
+        
+        ### **2. Thiết kế bài học (Lesson Design)**
+        - **Tiêu đề bài**: [15-248 chars] - Action-oriented, clear learning outcome
+        - **Thời lượng**: Calculated scientifically (xem công thức bên dưới)
+        - **Cấu trúc**: Theory → Example → Practice → Assessment
+        - **Thumbnail**: Professional images từ Pexels
+        
+        ### **3. Nội dung chi tiết (Content Details)**
+        - **Sections**: 2-5 phần/bài học
+        - **Content Description**: [250-1500 chars] - Comprehensive, actionable
+        - **Code Examples**: Real-world, working code với comments
+        - **Visuals**: Relevant images supporting learning
+        - **Practical Tips**: Industry best practices
+        
+        ### **4. Hệ thống đánh giá (Assessment System)**
+        - **3 câu hỏi essay/bài**: Varied difficulty levels
+        - **Scenario-based**: Real-world problem solving
+        - **Progressive**: Building on previous knowledge
+        - **Actionable**: Encouraging practical application
+        
+        ## 🧮 **CÔNG THỨC TÍNH THỜI LƯỢNG KHOA HỌC**
+        
+        ### **Tốc độ đọc chuẩn**:
+        - Text tiếng Việt: 220 từ/phút
+        - Code reading: 120 từ/phút
+        - Technical documentation: 180 từ/phút
+        
+        ### **Thời gian bổ sung**:
+        - Xem hình/diagram: 0.8 phút/hình
+        - Suy nghĩ câu hỏi: 2.5 phút/câu
+        - Pause/reflection: 5% tổng thời gian
+        - Code practice: 1.5x reading time
+        
+        ### **Công thức tính toán**:
+        ```
+        duration = (total_text_words / 220) + 
+                   (total_code_words / 120) + 
+                   (image_count * 0.8) + 
+                   (question_count * 2.5) + 
+                   (pause_reflection_time)
+        ```
+        
+        ### **Làm tròn**: Lên 5 phút gần nhất (min: 25 phút, max: 120 phút)
+        
+        
+        ## 📋 **FORMAT JSON RESPONSE BẮT BUỘC**
+        
+        **KHI ĐÃ ĐỦ THÔNG TIN, PHẢI TRẢ VỀ JSON THEO FORMAT SAU:**
+        
+        ```json
+        {
+          "course_title": "Tên khóa học (10-248 ký tự)",
+          "course_description": "Mô tả khóa học (10-498 ký tự)",
+          "lessons": [
+            {
+              "lesson_title": "Tiêu đề bài học (15-248 ký tự)",
+              "duration": duration, // Tính toán theo công thức trên
+              "content_lesson": [
+                {
+                  "content_title": "Tiêu đề phần nội dung",
+                  "content_description": "Nội dung chi tiết (250-1500 ký tự)",
+                  "example": {
+                    "example_description": "Mô tả ví dụ ngắn gọn (~150 ký tự)",
+                    "code_example": "console.log('Hello World'); // Mã code minh họa (~150 ký tự) - Bỏ trường này nếu không phải lập trình"
+                  }
+                }
+              ],
+              "practice_questions": [
+                {
+                  "question": "Câu hỏi thực hành số 1 (15-248 ký tự)",
+                  "type": "essay"
+                },
+                {
+                  "question": "Câu hỏi thực hành số 2 (15-248 ký tự)",
+                  "type": "essay"
+                },
+                {
+                  "question": "Câu hỏi thực hành số 3 (15-248 ký tự)",
+                  "type": "essay"
+                }
+              ]
+            }
+          ]
+        }
+        ```
+        
+        ## 🔧 **IMPLEMENTATION SPECIFICS**
+        
+        ### **JSON Structure Requirements**:
+        - Validate all required fields
+        - Ensure data types match schema
+        - Include calculation notes
+        - Error handling for edge cases
+        
+        ### **Quality Assurance**:
+        - Word count accuracy
+        - Duration calculation verification
+        - Content relevance check
+        - Technical accuracy review
+        
+        ## 🎯 **QUY TẮC TRẢ LỜI**
+        
+        ### **Khi chưa đủ thông tin**:
+        1. **HỎI MỘT CÂU DUY NHẤT** - Không overwhelm user
+        2. **Contextual questions** - Dựa vào thông tin đã có
+        3. **Provide options** - Đưa ra 2-3 lựa chọn cụ thể
+        4. **Explain why** - Giải thích tại sao cần thông tin này
+        5. **KHÔNG TRẢ VỀ JSON** - Chỉ hỏi thêm thông tin
+        
+        ### **Khi đã đủ thông tin**:
+        1. **Tóm tắt ngắn gọn** - Recap thông tin đã thu thập (1-2 câu)
+        2. **TRẢ VỀ JSON NGAY** - Theo đúng format đã chỉ định
+        3. **JSON phải hoàn chỉnh** - Không được thiếu field nào
+        4. **Tính toán chính xác** - Duration phải đúng công thức
+        
+        ### **QUAN TRỌNG - Response Format**:
+        - **Nếu chưa đủ thông tin**: Chỉ trả lời text bình thường
+        - **Nếu đã đủ thông tin**: Trả về JSON hoàn chỉnh theo format đã chỉ định
+        - **Xuất JSON** - Trong thẻ `<COURSE_JSON>...</COURSE_JSON>`
+        
+        ### **Tone và Style**:
+        - 🎯 Professional nhưng friendly
+        - 💡 Proactive suggestions
+        - 🔍 Detail-oriented
+        - 🚀 Encouraging và motivational
+        
+        ## 📖 **SAMPLE QUESTIONS BY CONTEXT**
+        
+        ### **For Beginners**:
+        - "Bạn có muốn tập trung vào việc hiểu concepts trước, hay bạn thích học qua thực hành luôn?"
+        - "Bạn có thời gian khoảng bao nhiêu giờ mỗi tuần để học?"
+        
+        ### **For Intermediate**:
+        - "Bạn muốn nâng cao kỹ năng hiện tại hay mở rộng sang lĩnh vực mới?"
+        - "Có framework hoặc tool nào bạn đặc biệt quan tâm không?"
+        
+        ### **For Advanced**:
+        - "Bạn muốn deep-dive vào architecture hay focus vào practical implementation?"
+        - "Mục tiêu cuối cùng là gì - teaching others, leading team, hay personal mastery?"
+        
+        ═══════════════════════════════════════════════════════════════════════════════════════
+        
+        $conversationContext
+        
+        **Tin nhắn mới từ user**: $prompt
+        
+        **Hãy phản hồi một cách thông minh. Nếu chưa đủ thông tin thì hỏi thêm. Nếu đã đủ thông tin thì trả về JSON theo format đã chỉ định.**
+        
+    """.trimIndent()
 
-🎯 UNIVERSAL COURSE ESTIMATION MATRIX:
-
-📚 THEO LOẠI KIẾN THỨC (Knowledge Type):
-• **Conceptual** (lý thuyết, hiểu biết): 8-15 bài
-• **Procedural** (quy trình, skill): 12-20 bài  
-• **Applied** (ứng dụng thực tế): 15-25 bài
-• **Creative** (sáng tạo, design): 10-18 bài
-• **Technical** (kỹ thuật chuyên sâu): 20-35 bài
-• **Comprehensive** (toàn diện một ngành): 30-60 bài
-
-🏭 THEO NGÀNH NGHỀ (Industry Categories):
-
-**1. BUSINESS & ENTREPRENEURSHIP:**
-• Startup cơ bản: 12-18 bài (strategy, MVP, funding, growth)
-• Business plan: 8-12 bài (research, model, financial, pitch)
-• Leadership & Management: 15-20 bài (team, communication, decision)
-• Sales & Negotiation: 10-15 bài (psychology, process, closing)
-
-**2. CREATIVE & DESIGN:**
-• Graphic Design cơ bản: 12-16 bài (principles, tools, portfolio)
-• Photography: 15-20 bài (technique, editing, business)
-• Video Production: 18-25 bài (pre-production, filming, post)
-• Interior Design: 20-30 bài (concept, 3D, materials, client)
-
-**3. MARKETING & COMMUNICATION:**
-• Digital Marketing: 15-25 bài (SEO, ads, social, analytics)
-• Content Creation: 10-18 bài (strategy, writing, visual, distribution)
-• Branding: 12-18 bài (identity, voice, visual, implementation)
-• Public Relations: 15-20 bài (media, crisis, events, measurement)
-
-**4. HEALTH & WELLNESS:**
-• Nutrition Planning: 12-18 bài (science, assessment, meal planning)
-• Fitness Training: 15-25 bài (anatomy, programming, technique)
-• Mental Health: 10-15 bài (awareness, coping, professional help)
-• Yoga/Meditation: 8-15 bài (basics, practice, teaching)
-
-**5. EDUCATION & TRAINING:**
-• Course Creation: 18-25 bài (design, content, delivery, platform)
-• Language Learning: 25-40 bài (grammar, vocabulary, conversation)
-• Tutoring Skills: 12-18 bài (methods, psychology, assessment)
-• Corporate Training: 15-22 bài (needs analysis, design, facilitation)
-
-**6. FINANCE & INVESTMENT:**
-• Personal Finance: 10-15 bài (budgeting, saving, investing basics)
-• Stock Trading: 20-30 bài (analysis, strategy, risk management)
-• Real Estate: 25-35 bài (market, financing, negotiation, management)
-• Cryptocurrency: 15-25 bài (technology, trading, security)
-
-**7. TRADES & CRAFTS:**
-• Woodworking: 20-30 bài (tools, safety, techniques, projects)
-• Cooking: 15-25 bài (basics, techniques, cuisines, business)
-• Gardening: 12-20 bài (soil, plants, seasons, maintenance)
-• Auto Repair: 25-40 bài (diagnosis, systems, tools, safety)
-
-**8. SCIENCE & RESEARCH:**
-• Data Analysis: 20-30 bài (statistics, tools, visualization, interpretation)
-• Scientific Writing: 12-18 bài (structure, methodology, publication)
-• Lab Techniques: 15-25 bài (safety, equipment, procedures, documentation)
-• Environmental Science: 20-35 bài (ecology, pollution, sustainability)
-
-**9. ARTS & PERFORMANCE:**
-• Music Production: 20-30 bài (theory, recording, mixing, mastering)
-• Acting: 15-25 bài (technique, voice, movement, audition)
-• Writing: 12-20 bài (craft, genres, editing, publishing)
-• Dance: 10-18 bài (technique, choreography, performance)
-
-**10. TECHNOLOGY (Non-Programming):**
-• Digital Literacy: 8-12 bài (basics, security, productivity)
-• Social Media Management: 12-18 bài (strategy, content, analytics)
-• E-commerce Operations: 15-25 bài (platforms, fulfillment, customer service)
-• Cybersecurity Awareness: 10-15 bài (threats, protection, best practices)
-
-⏱️ DURATION ESTIMATION bởi Content Type:
-
-**Theoretical Lessons:**
-- 400-600 chars = 5-10 phút (quick concept)
-- 600-900 chars = 10 phút (detailed explanation)
-- 900-1200 chars = 15-20 phút (comprehensive theory)
-
-**Practical Lessons:**
-- 600-800 chars = 10-15 phút (simple practice)
-- 800-1200 chars = 15 phút (guided practice)
-- 1200-1600 chars = 20-30 phút (complex application)
-
-**Project-Based Lessons:**
-- 800-1000 chars = 10 phút (mini project)
-- 1000-1400 chars = 15 phút (substantial project)
-- 1400-1800 chars = 20-30 phút (comprehensive project)
-
-🎨 LEARNING STYLE ADAPTATIONS:
-
-**Visual Learners:** More diagrams, infographics, step-by-step images
-**Auditory Learners:** Discussions, explanations, verbal instructions
-**Kinesthetic Learners:** Hands-on activities, experiments, building
-**Reading/Writing:** Detailed notes, written exercises, documentation
-
-📊 COMPLEXITY MULTIPLIERS:
-
-**Beginner Level:** Base time × 1.0 (clear explanations, more examples)
-**Intermediate Level:** Base time × 1.2 (faster pace, more depth)
-**Advanced Level:** Base time × 1.5 (complex concepts, less guidance)
-**Expert Level:** Base time × 1.8 (theoretical depth, research-based)
-
-🔄 COURSE STRUCTURE PATTERNS:
-
-**Foundation Pattern** (8-15 bài):
-- Introduction & Overview (1-2 bài)
-- Core Concepts (4-6 bài)
-- Basic Applications (3-5 bài)
-- Summary & Next Steps (1-2 bài)
-
-**Skill Development Pattern** (12-25 bài):
-- Fundamentals (3-4 bài)
-- Core Skills (6-10 bài)
-- Advanced Techniques (4-7 bài)
-- Real-World Application (2-4 bài)
-
-**Project-Based Pattern** (15-35 bài):
-- Planning & Setup (2-4 bài)
-- Core Development (8-15 bài)
-- Advanced Features (4-10 bài)
-- Refinement & Launch (2-4 bài)
-- Maintenance & Growth (1-2 bài)
-
-**Comprehensive Program** (30-60 bài):
-- Foundation Module (8-12 bài)
-- Core Skills Module (12-18 bài)
-- Advanced Applications (8-15 bài)
-- Specialization Tracks (6-12 bài)
-- Capstone Project (3-6 bài)
-
-$conversationContext
-
-Câu trả lời mới: "$prompt"
-
-THÔNG TIN CẦN THU THẬP:
-- **Ngành nghề/lĩnh vực cụ thể** và scope mong muốn
-- **Mục tiêu học tập** (awareness/skill/mastery/professional)
-- **Đối tượng học** (beginner/intermediate/advanced/expert)
-- **Thời gian cam kết** và **learning style preference**
-- **Ứng dụng thực tế** (cá nhân/công việc/kinh doanh/academic)
-
-YÊU CẦU ESTIMATION:
-1. **Xác định Industry Category** từ user input
-2. **Classify Knowledge Type** (conceptual/procedural/applied/etc.)
-3. **Determine Complexity Level** và target audience
-4. **Calculate optimal số bài** based on matrix
-5. **Estimate realistic duration** cho mỗi lesson type
-6. **Structure progression** phù hợp với learning objectives
-
-YÊU CẦU TRẢ LỜI:
-1. Đảm bảo hỏi từng câu một , không hỏi nhiều câu cùng lúc
-2. Nếu đã đủ thông tin: Mô tả khóa học + xuất JSON trong thẻ <COURSE_JSON>
-
-FORMAT JSON (chỉ khi đủ thông tin):
-{
-  "title_course": "string (60-120 ký tự - industry-specific title)",
-  "des_course": "string (150-300 ký tự - outcomes, target audience, real-world applications)", 
-  "lessons": [
-    {
-      "title_lesson": "string (40-90 ký tự - outcome-focused, industry-appropriate)",
-      "duration": "số phút CALCULATED từ content complexity + industry standards",
-      "content_lesson": "string (500-2000 ký tự tùy lesson complexity):
-        STRUCTURE phù hợp với ngành nghề:
-        • Tại sao quan trọng trong industry context
-        • Key concepts/skills/techniques cần master
-        • Practical implementation với industry examples
-        • Best practices và industry standards
-        • Common challenges và solutions
-        • Connection với broader workflow/process
-        • Immediate applications trong real work
-        TONE phù hợp với professional level và industry culture.",
-      "example": {
-        "des_short": "string (~150 ký tự - industry-relevant scenario)",
-        "code": "string (~200 ký tự - templates/tools/resources specific to field)"
-      },
-      "practice": "string (100-250 ký tự - industry-appropriate exercise với professional relevance)"
-    }
-  ]
-}
-
-VALIDATION cho mọi ngành nghề:
-✅ Số bài realistic cho industry complexity
-✅ Duration based on actual professional practice time
-✅ Content relevant to current industry standards
-✅ Progression matches professional development path
-✅ Examples from real industry scenarios
-✅ Outcomes applicable to actual work situations
-✅ Language và terminology appropriate for field
-✅ Tools và resources currently used in industry
-
-INDUSTRY-SPECIFIC ADAPTATIONS:
-- **Healthcare:** Include safety, ethics, regulations
-- **Finance:** Include compliance, risk management
-- **Creative:** Include portfolio development, client relations
-- **Technical:** Include troubleshooting, documentation
-- **Business:** Include ROI, stakeholder management
-- **Education:** Include assessment, differentiation
-- **Trades:** Include safety, tool maintenance, quality control
-"""
-
-        val response: GeminiResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
-            contentType(ContentType.Application.Json)
-            parameter("key", getGeminiKey.returnkey())
-            setBody(
-                GeminiRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(
-                                Part(text = systemPrompt)
+        val response: GeminiResponse =
+            client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
+                contentType(ContentType.Application.Json)
+                parameter("key", getGeminiKey.returnkey())
+                setBody(
+                    GeminiRequest(
+                        contents = listOf(
+                            Content(
+                                parts = listOf(
+                                    Part(text = systemPrompt)
+                                )
                             )
                         )
                     )
                 )
-            )
-        }.body()
+            }.body()
 
         val fullResponse = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
             ?: "Không có phản hồi"
 
-        // Tách phần JSON và phần hiển thị
-        val (displayText, jsonData) = extractCourseData(fullResponse)
+        // Kiểm tra xem response có phải là JSON không
+        val jsonData = extractJsonFromResponse(fullResponse)
 
-        // Lưu JSON vào final_export (chỉ dev thấy)
-        final_export = jsonData
+        if (jsonData != null) {
+            // Lưu JSON để dev có thể truy cập
+            final_export = jsonData
 
-        // Trả về phần hiển thị cho người dùng
-        return displayText
+            // Tạo ảnh course thumbnail
+            val courseTitle = kotlinx.serialization.json.Json.parseToJsonElement(jsonData)
+                .jsonObject["course_title"]?.jsonPrimitive?.content ?: "IT Course"
+
+            // Tạo ảnh bằng Imagen API
+            generateCourseImage(courseTitle)
+
+            // Trả về message thông báo hoàn thành cho user (KHÔNG trả về JSON)
+            return """
+                🎉 **Khóa học đã được tạo thành công!**
+                
+                📚 **Tên khóa học**: $courseTitle
+                
+                ✅ **Hoàn thành**: 
+                - Cấu trúc khóa học chi tiết
+                - Nội dung bài học đã được thiết kế
+                - Câu hỏi thực hành đã chuẩn bị
+                - Ảnh thumbnail đã tạo xong
+                
+                🚀 **Khóa học của bạn đã sẵn sàng để sử dụng!**
+                
+                Bạn có muốn điều chỉnh gì thêm không?
+            """.trimIndent()
+        } else {
+            // Trả về text response bình thường (khi chưa đủ thông tin)
+            return fullResponse
+        }
+    }
+
+    suspend fun generateCourseImage(courseTitle: String) {
+        try {
+            // Alternative: Create JSON string directly
+            val requestBodyJson = """
+       {
+    "contents": [{
+      "parts": [
+        {"text": "Hello, can you create a  ${courseTitle}?"}
+      ]
+    }],
+    "generationConfig":{"responseModalities":["TEXT","IMAGE"]}
+  }
+        """.trimIndent()
+
+            // Call the correct Gemini endpoint
+            val response: String =
+                client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent") {
+                    contentType(ContentType.Application.Json)
+                    parameter("key", getGeminiKey.returnkey())
+                    setBody(requestBodyJson)
+                }.bodyAsText()
+
+            Log.d("GeminiServiceIMG", "Image generation response: $response")
+
+            // Parse the response to extract base64 image data
+            val json = kotlinx.serialization.json.Json.parseToJsonElement(response).jsonObject
+
+            // Navigate through the response structure to find the image data
+            val candidates = json["candidates"]?.jsonArray
+            if (candidates != null && candidates.isNotEmpty()) {
+                val firstCandidate = candidates[0].jsonObject
+                val content = firstCandidate["content"]?.jsonObject
+                val parts = content?.get("parts")?.jsonArray
+
+                var base64Image: String? = null
+
+                // Look for image data in the parts
+                parts?.forEach { part ->
+                    val partObj = part.jsonObject
+                    val inlineData = partObj["inlineData"]?.jsonObject
+                    if (inlineData != null) {
+                        base64Image = inlineData["data"]?.jsonPrimitive?.content
+                    }
+                }
+
+                // If base64 image data is found
+                if (base64Image != null) {
+                    val imageBytes = Base64.decode(base64Image, Base64.DEFAULT)
+                    val tempFile = File.createTempFile("course_thumbnail", ".png")
+                    tempFile.writeBytes(imageBytes)
+                    courseImageUrl =
+                        com.example.aisupabase.cloudinary.CloudinaryService.uploadImage(tempFile)
+                    tempFile.delete()
+
+                    Log.d("GeminiService", "Course image generated successfully: $courseImageUrl")
+                } else {
+                    Log.e("GeminiService", "No image data found in response")
+                    courseImageUrl = null
+                }
+            } else {
+                Log.e("GeminiService", "No candidates found in response")
+                courseImageUrl = null
+            }
+
+        } catch (e: Exception) {
+            Log.e("GeminiService", "Error generating course image: ${e.message}")
+            e.printStackTrace()
+            courseImageUrl = null
+        }
     }
 
     private fun buildConversationContext(chatHistory: List<ChatMessage>): String {
         if (chatHistory.isEmpty()) {
-            return "LỊCH SỬ HỘI THOẠI: Chưa có cuộc hội thoại nào."
+            return "**LỊCH SỬ HỘI THOẠI**: Cuộc trò chuyện mới bắt đầu."
         }
 
-        val context = StringBuilder("LỊCH SỬ HỘI THOẠI:\n")
-        chatHistory.forEach { message ->
-            val role = if (message.isUser) "Người dùng" else "Bot"
+        val context = StringBuilder("**LỊCH SỬ HỘI THOẠI**:\n")
+        chatHistory.takeLast(10).forEach { message -> // Chỉ lấy 10 tin nhắn gần nhất
+            val role = if (message.isUser) "👤 User" else "🤖 Assistant"
             context.append("$role: ${message.message}\n")
         }
-
-        // Phân tích thông tin đã có
-        context.append("\nPHÂN TÍCH THÔNG TIN ĐÃ CÓ:\n")
-        context.append(analyzeCollectedInfo(chatHistory))
 
         return context.toString()
     }
 
     private fun analyzeCollectedInfo(chatHistory: List<ChatMessage>): String {
         val userMessages = chatHistory.filter { it.isUser }.map { it.message.lowercase() }
-        val analysis = StringBuilder()
+        val analysis = StringBuilder("**PHÂN TÍCH THÔNG TIN ĐÃ THU THẬP**:\n\n")
 
-        // Kiểm tra chủ đề
-        val topicKeywords = listOf("thiết kế đồ họa", "python", "marketing", "lập trình", "nấu ăn", "tiếng anh")
-        val foundTopic = topicKeywords.find { keyword ->
-            userMessages.any { it.contains(keyword) }
-        }
-        if (foundTopic != null) {
-            analysis.append("- Chủ đề: $foundTopic\n")
-        } else {
-            analysis.append("- Chủ đề: Chưa rõ\n")
-        }
-
-        // Kiểm tra đối tượng
-        val audienceKeywords = mapOf(
-            "người mới" to "beginner",
-            "mới bắt đầu" to "beginner",
-            "sinh viên" to "student",
-            "chuyên nghiệp" to "professional",
-            "doanh nghiệp" to "business"
+        // Phân tích chủ đề IT
+        val itTopics = mapOf(
+            "web development" to listOf(
+                "web",
+                "html",
+                "css",
+                "javascript",
+                "react",
+                "vue",
+                "angular",
+                "frontend",
+                "backend"
+            ),
+            "mobile development" to listOf(
+                "mobile",
+                "android",
+                "ios",
+                "flutter",
+                "react native",
+                "kotlin",
+                "swift"
+            ),
+            "data science" to listOf(
+                "data",
+                "analytics",
+                "python",
+                "machine learning",
+                "ai",
+                "statistics",
+                "pandas"
+            ),
+            "devops" to listOf(
+                "devops",
+                "docker",
+                "kubernetes",
+                "aws",
+                "cloud",
+                "ci/cd",
+                "jenkins"
+            ),
+            "cybersecurity" to listOf(
+                "security",
+                "ethical hacking",
+                "penetration",
+                "network security",
+                "firewall"
+            ),
+            "game development" to listOf(
+                "game",
+                "unity",
+                "unreal",
+                "c#",
+                "gamedev",
+                "3d",
+                "animation"
+            )
         )
-        val foundAudience = audienceKeywords.entries.find { (keyword, _) ->
-            userMessages.any { it.contains(keyword) }
+
+        var foundTopic = "❓ Chưa xác định"
+        for ((topic, keywords) in itTopics) {
+            if (keywords.any { keyword -> userMessages.any { it.contains(keyword) } }) {
+                foundTopic = "✅ $topic"
+                break
+            }
         }
-        if (foundAudience != null) {
-            analysis.append("- Đối tượng: ${foundAudience.key}\n")
-        } else {
-            analysis.append("- Đối tượng: Chưa rõ\n")
+        analysis.append("📚 **Chủ đề**: $foundTopic\n")
+
+        // Phân tích trình độ
+        val skillLevels = mapOf(
+            "Beginner" to listOf("mới bắt đầu", "chưa biết", "cơ bản", "học từ đầu", "beginner"),
+            "Intermediate" to listOf(
+                "trung bình",
+                "có kinh nghiệm",
+                "intermediate",
+                "đã biết một chút"
+            ),
+            "Advanced" to listOf("nâng cao", "advanced", "expert", "chuyên nghiệp", "thành thạo")
+        )
+
+        var foundLevel = "❓ Chưa xác định"
+        for ((level, keywords) in skillLevels) {
+            if (keywords.any { keyword -> userMessages.any { it.contains(keyword) } }) {
+                foundLevel = "✅ $level"
+                break
+            }
+        }
+        analysis.append("🎯 **Trình độ**: $foundLevel\n")
+
+        // Phân tích mục tiêu
+        val goals = mapOf(
+            "Career Switch" to listOf("chuyển nghề", "tìm việc", "career", "job", "công việc mới"),
+            "Skill Enhancement" to listOf("nâng cao", "improve", "better", "skill", "kỹ năng"),
+            "Personal Interest" to listOf("sở thích", "personal", "hobby", "tò mò", "quan tâm"),
+            "Business Need" to listOf("doanh nghiệp", "business", "startup", "project", "dự án")
+        )
+
+        var foundGoal = "❓ Chưa xác định"
+        for ((goal, keywords) in goals) {
+            if (keywords.any { keyword -> userMessages.any { it.contains(keyword) } }) {
+                foundGoal = "✅ $goal"
+                break
+            }
+        }
+        analysis.append("🎯 **Mục tiêu**: $foundGoal\n")
+
+        // Phân tích timeline
+        val timelines = mapOf(
+            "Rush (1-2 tuần)" to listOf("gấp", "nhanh", "rush", "1 tuần", "2 tuần"),
+            "Standard (3-4 tuần)" to listOf("bình thường", "3 tuần", "4 tuần", "1 tháng"),
+            "Comprehensive (2-3 tháng)" to listOf(
+                "kỹ lưỡng",
+                "2 tháng",
+                "3 tháng",
+                "comprehensive"
+            ),
+            "Long-term (6+ tháng)" to listOf("dài hạn", "6 tháng", "1 năm", "long term")
+        )
+
+        var foundTimeline = "❓ Chưa xác định"
+        for ((timeline, keywords) in timelines) {
+            if (keywords.any { keyword -> userMessages.any { it.contains(keyword) } }) {
+                foundTimeline = "✅ $timeline"
+                break
+            }
+        }
+        analysis.append("⏰ **Timeline**: $foundTimeline\n")
+
+        // Đánh giá độ hoàn thiện thông tin
+        val completionScore =
+            listOf(foundTopic, foundLevel, foundGoal, foundTimeline).count { it.startsWith("✅") }
+        val completionPercentage = (completionScore * 25)
+        analysis.append("\n📊 **Độ hoàn thiện thông tin**: $completionPercentage% ($completionScore/4 tiêu chí)\n")
+
+        when {
+            completionPercentage >= 75 -> analysis.append("🟢 **Trạng thái**: Đủ thông tin để tạo khóa học!\n")
+            completionPercentage >= 50 -> analysis.append("🟡 **Trạng thái**: Cần thêm 1-2 thông tin nữa\n")
+            else -> analysis.append("🔴 **Trạng thái**: Cần thu thập thêm thông tin cơ bản\n")
         }
 
         return analysis.toString()
     }
 
-    private fun extractCourseData(response: String): Pair<String, String?> {
+    private fun extractJsonFromResponse(response: String): String? {
+        val trimmedResponse = response.trim()
+
+        // Kiểm tra xem response có chứa JSON trong <COURSE_JSON> tags
         val jsonStartTag = "<COURSE_JSON>"
         val jsonEndTag = "</COURSE_JSON>"
 
-        val jsonStartIndex = response.indexOf(jsonStartTag)
-        val jsonEndIndex = response.indexOf(jsonEndTag)
-
-        return if (jsonStartIndex != -1 && jsonEndIndex != -1) {
-            val displayText = response.substring(0, jsonStartIndex).trim()
-            val jsonData = response.substring(jsonStartIndex + jsonStartTag.length, jsonEndIndex).trim()
-            Pair(displayText, jsonData)
-        } else {
-            // Nếu không tìm thấy JSON, trả về toàn bộ response làm display text
-            Pair(response, null)
+        if (trimmedResponse.contains(jsonStartTag) && trimmedResponse.contains(jsonEndTag)) {
+            val startIndex = trimmedResponse.indexOf(jsonStartTag) + jsonStartTag.length
+            val endIndex = trimmedResponse.indexOf(jsonEndTag, startIndex)
+            if (endIndex > startIndex) {
+                return trimmedResponse.substring(startIndex, endIndex).trim()
+            }
         }
+
+        // Kiểm tra xem response có bắt đầu bằng { và kết thúc bằng } không
+        if (trimmedResponse.startsWith("{") && trimmedResponse.endsWith("}")) {
+            return trimmedResponse
+        }
+
+        // Tìm kiếm JSON object trong response
+        val jsonStartIndex = trimmedResponse.indexOf("{")
+        val jsonEndIndex = trimmedResponse.lastIndexOf("}")
+
+        if (jsonStartIndex != -1 && jsonEndIndex != -1 && jsonStartIndex < jsonEndIndex) {
+            val potentialJson = trimmedResponse.substring(jsonStartIndex, jsonEndIndex + 1)
+
+            // Kiểm tra xem có phải JSON hợp lệ không
+            return try {
+                kotlinx.serialization.json.Json.parseToJsonElement(potentialJson)
+                potentialJson
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        return null
     }
 
     // Phương thức để dev lấy final_export (có thể gọi từ debug hoặc admin panel)
@@ -348,14 +606,130 @@ INDUSTRY-SPECIFIC ADAPTATIONS:
         return final_export
     }
 
-    // Phương thức để clear final_export
-    fun clearFinalExport() {
-        final_export = null
+    // Phương thức để lấy URL ảnh course
+    fun getCourseImageUrl(): String? {
+        return courseImageUrl
     }
 
-    // Reset collected info cho session mới
-    fun resetSession() {
-        collectedInfo.clear()
-        final_export = null
+    suspend fun generateQuestion(prompt: String): Result<List<Question>> {
+        return try {
+            val systemPrompt = """
+        Bạn là một chuyên gia tạo câu hỏi trắc nghiệm cho các khóa học IT. 
+        Hãy tạo ra 5 câu hỏi trắc nghiệm chất lượng cao dựa trên nội dung: "$prompt"
+        
+        ## 📋 YÊU CẦU CHẤT LƯỢNG:
+        1. **Độ khó tăng dần**: Câu 1-2 (cơ bản), Câu 3-4 (trung bình), Câu 5 (nâng cao)
+        2. **Tính thực tế**: Câu hỏi phải áp dụng được trong công việc thực tế
+        3. **Đáp án hợp lý**: Các đáp án sai phải hợp lý, không quá dễ loại bỏ
+        4. **Kiến thức toàn diện**: Bao phủ các khía cạnh khác nhau của chủ đề
+        5. **Tránh lỗi**: Kiểm tra kỹ tính chính xác của đáp án đúng
+        
+        ## 🎯 ĐỊNH DẠNG RESPONSE (CHỈ TRẢ VỀ JSON):
+        ```json
+        {
+          "questions": [
+            {
+              "question": "Câu hỏi cụ thể và rõ ràng (20-200 ký tự)",
+              "A": "Đáp án A - chi tiết và chính xác",
+              "B": "Đáp án B - chi tiết và chính xác", 
+              "C": "Đáp án C - chi tiết và chính xác",
+              "D": "Đáp án D - chi tiết và chính xác",
+              "choice": "A" // Chữ cái đáp án đúng (A/B/C/D)
+            }
+          ]
+        }
+        ```
+        
+        ## ⚠️ LƯU Ý QUAN TRỌNG:
+        - Chỉ trả về JSON thuần túy, không thêm markdown hoặc text giải thích
+        - Trường "choice" phải chứa chữ cái (A/B/C/D), không phải nội dung đáp án
+        - Đảm bảo tất cả câu hỏi đều liên quan chặt chẽ đến chủ đề đã cho
+        - Kiểm tra kỹ tính chính xác của đáp án trước khi trả về
+        
+        Hãy tạo 5 câu hỏi chất lượng cao ngay bây giờ.
+        """.trimIndent()
+
+            val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+            val response: GeminiResponse = client.post(GEMINI_BASE_URL) {
+                contentType(ContentType.Application.Json)
+                parameter("key", getGeminiKey.returnkey())
+                setBody(
+                    GeminiRequest(
+                        contents = listOf(
+                            Content(
+                                parts = listOf(
+                                    Part(text = systemPrompt)
+                                )
+                            )
+                        )
+                    )
+                )
+            }.body()
+
+            val fullResponse = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                ?: throw Exception("Không có phản hồi từ Gemini API")
+
+            Log.d("GeminiService", "Raw response: $fullResponse")
+
+            // Làm sạch response để chỉ lấy JSON
+            val cleanedResponse = cleanJsonResponse(fullResponse)
+            Log.d("GeminiService", "Cleaned response: $cleanedResponse")
+
+            // Parse JSON response với error handling tốt hơn
+            val questionsResponse = try {
+                Json.decodeFromString<QuestionsResponse>(cleanedResponse)
+            } catch (e: Exception) {
+                Log.e("GeminiService", "JSON parsing error: ${e.message}")
+                throw Exception("Lỗi phân tích dữ liệu từ AI. Vui lòng thử lại.")
+            }
+
+            // Validate câu hỏi
+            val validatedQuestions = validateQuestions(questionsResponse.questions)
+
+            if (validatedQuestions.isEmpty()) {
+                throw Exception("Không thể tạo câu hỏi hợp lệ. Vui lòng thử lại.")
+            }
+
+            Log.d("GeminiService", "Generated ${validatedQuestions.size} valid questions")
+            Result.success(validatedQuestions)
+
+        } catch (e: Exception) {
+            Log.e("GeminiService", "Error generating questions: ${e.message}", e)
+            Result.failure(Exception("Lỗi tạo câu hỏi: ${e.message}"))
+        }
     }
+
+    // Hàm làm sạch JSON response
+    private fun cleanJsonResponse(response: String): String {
+        var cleaned = response.trim()
+
+        // Loại bỏ markdown code blocks
+        cleaned = cleaned.replace("```json", "").replace("```", "")
+
+        // Loại bỏ text phía trước JSON
+        val jsonStart = cleaned.indexOf("{")
+        val jsonEnd = cleaned.lastIndexOf("}")
+
+        if (jsonStart != -1 && jsonEnd != -1 && jsonStart <= jsonEnd) {
+            cleaned = cleaned.substring(jsonStart, jsonEnd + 1)
+        }
+
+        return cleaned.trim()
+    }
+
+    // Hàm validate câu hỏi
+    private fun validateQuestions(questions: List<Question>): List<Question> {
+        return questions.filter { question ->
+            // Kiểm tra các điều kiện cơ bản
+            question.question.isNotBlank() &&
+                    question.A.isNotBlank() &&
+                    question.B.isNotBlank() &&
+                    question.C.isNotBlank() &&
+                    question.D.isNotBlank() &&
+                    question.choice.matches(Regex("[ABCD]")) &&
+                    question.question.length in 20..200
+        }.take(5) // Chỉ lấy tối đa 5 câu
+    }
+
 }

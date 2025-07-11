@@ -9,7 +9,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.aisupabase.pages.admin.Admin_Blogs
 import com.example.aisupabase.pages.admin.Admin_Courses
 import com.example.aisupabase.pages.admin.Admin_Lessons
-import com.example.aisupabase.pages.admin.Admin_Questions
 import com.example.aisupabase.pages.admin.Admin_Roadmaps
 import com.example.aisupabase.pages.admin.Admin_Tag_Blogs
 import com.example.aisupabase.pages.admin.Admin_Type_Accounts
@@ -25,6 +24,7 @@ import com.example.aisupabase.pages.client.Client_Blog_By_Tag
 import com.example.aisupabase.pages.client.Client_Course_User
 import com.example.aisupabase.pages.client.Client_Noti
 import com.example.aisupabase.pages.client.Client_Question
+import com.example.aisupabase.pages.client.Client_Quiz
 import com.example.aisupabase.pages.client.Client_RM
 import com.example.aisupabase.pages.client.Client_Tag
 import com.example.aisupabase.pages.client.Client_Update_Account
@@ -55,7 +55,6 @@ class MainActivity : ComponentActivity() {
                 composable("admin_user_invoices") { Admin_User_Invoids(navController) }
                 composable("admin_users") { Admin_Users(navController) }
                 composable("admin_type_accounts") { Admin_Type_Accounts(navController) }
-                composable("admin_question") { Admin_Questions(navController) }
 
                 // client screens
                 composable("client_home") { ClientHomeScreen(navController) }
@@ -70,6 +69,10 @@ class MainActivity : ComponentActivity() {
                 composable("client_noti") { Client_Noti(navController) }
                 composable("client_update_account") { Client_Update_Account(navController) }
 
+                composable("client_quizzes/{prompt}") { backStackEntry ->
+                    val prompt = backStackEntry.arguments?.getString("prompt") ?: ""
+                    Client_Quiz(navController, prompt)
+                }
                 // client detail page
                 composable("client_detail_blog/{id}") { backStackEntry ->
                     val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0

@@ -13,14 +13,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aisupabase.models.Tags
 import com.example.aisupabase.ui.theme.Purple100
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDateTime
@@ -72,7 +70,8 @@ object function_handle_public {
 
     fun formatTransactionDate(dateString: String): String {
         return try {
-            val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss") // adjust if needed
+            val inputFormatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss") // adjust if needed
             val outputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             val dateTime = LocalDateTime.parse(dateString, inputFormatter)
             outputFormatter.format(dateTime)
@@ -104,25 +103,6 @@ object function_handle_public {
             }
             .decodeList<Tags>()
         return typeList.firstOrNull()
-    }
-
-    @Composable
-    fun SlideInItem(
-        visible: Boolean,
-        modifier: Modifier = Modifier,
-        delayMillis: Int = 0,
-        content: @Composable () -> Unit
-    ) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = slideInVertically(
-                initialOffsetY = { it / 2 },
-                animationSpec = tween(durationMillis = 600, delayMillis = delayMillis)
-            ) + fadeIn(animationSpec = tween(durationMillis = 600, delayMillis = delayMillis)),
-            modifier = modifier
-        ) {
-            content()
-        }
     }
 
     @Composable

@@ -19,10 +19,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -34,8 +34,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.aisupabase.config.SupabaseClientProvider
-import com.example.aisupabase.config.function_handle_public.formatToParagraphs
 import com.example.aisupabase.controllers.LearnRepository
 import com.example.aisupabase.controllers.LessonRepository
 import com.example.aisupabase.controllers.LessonResult
@@ -47,7 +47,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import lessons
-import org.json.JSONObject
+import org.json.JSONArray
 
 class lessonDetailViewModel(private val repository: LessonRepository, private val learnRepository: LearnRepository): ViewModel() {
     private val _lessonsList = MutableStateFlow<List<lessons>>(emptyList())
@@ -131,14 +131,12 @@ fun LessonDetailView(
     val context = LocalContext.current
     val session = authUser().getUserSession(context)
     val id_user = session["id"] as Int
-
     LaunchedEffect(id, id_user) {
         viewModel.getLessonByID(id, id_user)
     }
 
     val ListLesson by viewModel.lessonsList.collectAsState()
     val isCompleted by viewModel.isCompleted.collectAsState()
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -167,12 +165,44 @@ fun LessonDetailView(
                         .fillMaxSize()
                 ) {
                     item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(280.dp)
+                        ) {
+                            AsyncImage(
+                                model = ListLesson[0].url_image,
+                                contentDescription = "Ảnh khóa học",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            // Gradient overlay
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.verticalGradient(
+                                            colors = listOf(
+                                                Color.Transparent,
+                                                Color.Black.copy(alpha = 0.7f)
+                                            ),
+                                            startY = 0f,
+                                            endY = Float.POSITIVE_INFINITY
+                                        )
+                                    )
+                            )
+                        }
+                    }
+                    item {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .offset(y = (-20).dp),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                         ) {
+
+                            Spacer(modifier = Modifier.width(16.dp))
                             Box(
                                 modifier = Modifier
                                     .background(
@@ -203,58 +233,90 @@ fun LessonDetailView(
                                         color = Color.Gray.copy(alpha = 0.2f)
                                     )
 
-                                    val jsonLesson = try {
-                                        JSONObject(ListLesson[0].content_lesson)
-                                    } catch (e: Exception) {
-                                        null
-                                    }
+                                    val contentArray = JSONArray(ListLesson[0].content_lesson)
 
-                                    if (jsonLesson != null) {
-                                        val contentLession = formatToParagraphs(jsonLesson.optString("content_lession"))
-                                        val exampleObj = jsonLesson.optJSONObject("example")
-                                        val desShort = formatToParagraphs(exampleObj?.optString("des_short") ?: "")
-                                        val code = exampleObj?.optString("code") ?: ""
+                                    if (contentArray.length() != 0) {
+                                        for (i in 1 until contentArray.length()) {
+                                            val item = contentArray.getJSONObject(i)
+                                            val contentTitle = item.getString("content_title")
+                                            val contentDescription = item.getString("content_description")
+                                            val example = item.optJSONObject("example")
+                                            val exampleDescription = example?.optString("example_description") ?: ""
+                                            val codeExample = example?.optString("code_example") ?: ""
 
-
-                                        Text(
-                                            text = contentLession,
-                                            fontSize = 16.sp,
-                                            color = Color(0xFF4A5568),
-                                            lineHeight = 28.sp,
-                                            textAlign = TextAlign.Justify,
-                                            modifier = Modifier.padding(bottom = 24.dp)
-                                        )
-
-                                        Text(
-                                            text = desShort,
-                                            fontSize = 16.sp,
-                                            color = Color(0xFF4A5568),
-                                            lineHeight = 28.sp,
-                                            textAlign = TextAlign.Justify,
-                                            modifier = Modifier.padding(bottom = 24.dp)
-                                        )
-
-                                        if (code != "") {
-                                            Surface(
-                                                color = Color(0xFFF5F5F5),
-                                                shape = RoundedCornerShape(8.dp),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(bottom = 24.dp)
-                                            ) {
+                                            Text(
+                                                text = "${i}.${contentTitle}",
+                                                fontSize = 26.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF4A5568),
+                                                lineHeight = 28.sp,
+                                                textAlign = TextAlign.Justify,
+                                                modifier = Modifier.padding(bottom = 24.dp)
+                                            )
+                                            Text(
+                                                text = contentDescription,
+                                                fontSize = 16.sp,
+                                                color = Color(0xFF4A5568),
+                                                lineHeight = 28.sp,
+                                                textAlign = TextAlign.Justify,
+                                                modifier = Modifier.padding(bottom = 24.dp)
+                                            )
+                                            if (exampleDescription.isNotEmpty()) {
                                                 Text(
-                                                    text = code,
+                                                    text ="Ví dụ: $exampleDescription",
+
                                                     fontSize = 16.sp,
-                                                    color = Color(0xFF2D3748),
-                                                    lineHeight = 24.sp,
-                                                    fontFamily = FontFamily.Monospace,
-                                                    modifier = Modifier.padding(16.dp)
+                                                    lineHeight = 28.sp,
+                                                    textAlign = TextAlign.Justify,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(bottom = 24.dp)
+                                                )
+                                            }
+                                            if (codeExample.isNotEmpty()) {
+                                                Surface(
+                                                    color = Color(0xFFF5F5F5),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(bottom = 24.dp)
+                                                ) {
+                                                    Text(
+                                                        text = codeExample,
+                                                        fontSize = 16.sp,
+                                                        color = Color(0xFF2D3748),
+                                                        lineHeight = 24.sp,
+                                                        fontFamily = FontFamily.Monospace,
+                                                        modifier = Modifier.padding(16.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                        }
+
+                                        val practiceQuestions = ListLesson[0].practice_questions
+                                        if (practiceQuestions.isNotEmpty()) {
+                                            Text(
+                                                text = "Câu hỏi thực hành",
+                                                fontSize = 24.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF2D3748),
+                                                lineHeight = 28.sp,
+                                                modifier = Modifier.padding(bottom = 16.dp)
+                                            )
+                                            val questionsArray = JSONArray(practiceQuestions)
+                                            for (i in 0 until questionsArray.length()) {
+                                                val question = questionsArray.getJSONObject(i)
+                                                val questionText = question.getString("question")
+                                                Text(
+                                                    text = "${i + 1}. $questionText",
+                                                    fontSize = 16.sp,
+                                                    color = Color(0xFF4A5568),
+                                                    lineHeight = 28.sp,
+                                                    modifier = Modifier.padding(bottom = 8.dp)
                                                 )
                                             }
                                         }
-
                                         Spacer(modifier = Modifier.height(32.dp))
-
                                         if (!isCompleted) {
                                             Button(
                                                 onClick = {
@@ -282,6 +344,33 @@ fun LessonDetailView(
                                                 )
                                             }
                                         } else {
+                                            Button(
+                                                onClick = {
+
+                                                    navController.navigate("client_quizzes/${ListLesson[0].title_lesson}")
+                                                },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(56.dp)
+                                                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                                                shape = RoundedCornerShape(16.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = Purple100
+                                                )
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    "Ôn tập",
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(16.dp))
                                             Button(
                                                 onClick = {
 
@@ -317,4 +406,6 @@ fun LessonDetailView(
                 }
             }
         }
-    }
+
+}
+

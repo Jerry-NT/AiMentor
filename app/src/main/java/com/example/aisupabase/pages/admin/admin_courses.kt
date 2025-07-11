@@ -485,7 +485,7 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Chọn ảnh & hiển thị ảnh đã chọn
-                    Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text("Ảnh", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Button(
                             onClick = { imagePickerLauncher.launch("image/*") },
@@ -792,7 +792,7 @@ fun CourseManagementApp(supabase: SupabaseClient, viewModel: CoursesViewModel = 
                         }
                     }
 
-                    Text("Ảnh blog", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text("Ảnh", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Button(
                             onClick = { imagePickerLauncher.launch("image/*") },

@@ -7,4 +7,7 @@ data class lessons(
     val title_lesson: String,
     val content_lesson: String,
     val duration: Int,
+    val public_id_image: String,
+    val url_image: String,
+    val practice_questions:String
 )

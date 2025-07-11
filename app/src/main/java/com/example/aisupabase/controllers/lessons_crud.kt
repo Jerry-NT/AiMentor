@@ -62,12 +62,15 @@ class LessonRepository(private val supabase: SupabaseClient) {
         id_course: Int,
         title_lesson: String,
         content_lesson: String,
-        duration: Int
+        duration: Int,
+        public_id:String,
+        url_image:String,
+        practice_questions:String
     ): LessonResult<lessons> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["lessons"]
                 .insert(
-                    lessons(null, id_course, title_lesson, content_lesson, duration)
+                    lessons(null, id_course, title_lesson, content_lesson, duration,public_id, url_image,practice_questions)
                 ){
                     select()
                 }
@@ -84,12 +87,15 @@ class LessonRepository(private val supabase: SupabaseClient) {
         id_course: Int,
         title_lesson: String,
         content_lesson: String,
-        duration: Int
+        duration: Int,
+        public_id:String,
+        url_image:String,
+        practice_questions:String
     ): LessonResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val result = supabase.postgrest["lessons"]
                 .update(
-                    lessons(id, id_course, title_lesson, content_lesson, duration)
+                    lessons(id, id_course, title_lesson, content_lesson, duration, public_id, url_image,practice_questions)
                 ){
                 filter { eq("id", id) }
             }

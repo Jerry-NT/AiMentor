@@ -52,6 +52,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aisupabase.config.function_handle_public.getPublicIdFromUrl
 import org.json.JSONArray
 
 class ClientQuestionViewModel(
@@ -119,7 +120,7 @@ class ClientQuestionViewModel(
         viewModelScope.launch {
             _loading.value = true
             _error.value = null
-            when (val result = lessonRepository.addLesson(lesson.id_course, lesson.title_lesson, lesson.content_lesson, lesson.duration)) {
+            when (val result = lessonRepository.addLesson(lesson.id_course, lesson.title_lesson, lesson.content_lesson, lesson.duration,lesson.public_id_image, lesson.url_image,lesson.practice_questions)) {
                 is LessonResult.Success -> {
 
                     val newLesson = result.data
@@ -228,66 +229,75 @@ fun ChatScreen(
 
     var fullPrompt by remember { mutableStateOf("") }
     var shouldCallGemini by remember { mutableStateOf(false) }
-
+    var fullimage by remember { mutableStateOf("") }
     LaunchedEffect(shouldCallGemini) {
         if (shouldCallGemini) {
-//            Log.d("fullfinal",fullPrompt)
             try {
                 viewModel.getRoadMapByTitle("Người dùng")
                 val jsonResult = JSONObject(fullPrompt)
-                val titleCourse = jsonResult.getString("title_course")
-                val desCourse = jsonResult.getString("des_course")
+                val titleCourse = jsonResult.getString("course_title")
+                val desCourse = jsonResult.getString("course_description")
+                if(titleCourse !="" && desCourse !=""){
+                    viewModel.getRoadMapByTitle("Người dùng") { roadmapId ->
+                        if (roadmapId != null) {
+                            viewModel.addCourse(
+                                title = titleCourse,
+                                description = desCourse,
+                                publicId = getPublicIdFromUrl(fullimage),
+                                urlImage = fullimage,
+                                isPrivate = true,
+                                userCreate = session["id"] as Int,
+                                id_roadmap = roadmapId,
+                                onSuccess = { courseId ->
+                                    viewModel.subCourse(session["id"] as Int, courseId)
 
-                viewModel.getRoadMapByTitle("Người dùng") { roadmapId ->
-                    if (roadmapId != null) {
-                        viewModel.addCourse(
-                            title = titleCourse,
-                            description = desCourse,
-                            publicId = "cong-nghe-ai-moi-nhat_wjkuw3",
-                            urlImage = "https://res.cloudinary.com/dwgzc6k8i/image/upload/v1751196195/cong-nghe-ai-moi-nhat_wjkuw3.webp",
-                            isPrivate = true,
-                            userCreate = session["id"] as Int,
-                            id_roadmap = roadmapId,
-                            onSuccess = { courseId ->
-                                viewModel.subCourse(session["id"] as Int, courseId)
+                                    val lessonsArray = jsonResult.getJSONArray("lessons")
 
-                                val lessonsArray = jsonResult.getJSONArray("lessons")
+                                    // Hàm đệ quy để thêm lessons tuần tự
+                                    fun addLessonSequentially(index: Int) {
+                                        if (index >= lessonsArray.length()) {
+                                            navController.navigate("client_course_user")
+                                            return
+                                        }
 
-                                // Hàm đệ quy để thêm lessons tuần tự
-                                fun addLessonSequentially(index: Int) {
-                                    if (index >= lessonsArray.length()) {
-                                        navController.navigate("client_course_user")
-                                        return
+                                        val lesson = lessonsArray.getJSONObject(index)
+                                        val titleLessonOriginal = lesson.getString("lesson_title")
+                                        val contentLesson = lesson.getString("content_lesson")
+                                        val duration = lesson.getString("duration")
+                                        viewModel.viewModelScope.launch {
+                                            geminiService.generateCourseImage(titleLessonOriginal.trim())
+                                            val imageUrl = geminiService.getCourseImageUrl() ?: ""
+                                            viewModel.addLesson(
+                                                lessons(
+                                                    null,
+                                                    id_course = courseId,
+                                                    title_lesson = titleLessonOriginal.trim(),
+                                                    content_lesson = contentLesson.toString(),
+                                                    duration = duration.toIntOrNull() ?: 0,
+                                                    getPublicIdFromUrl(imageUrl),
+                                                    url_image = imageUrl,
+                                                    practice_questions = lesson.getString("practice_questions")
+                                                ),
+                                                onSuccess = {
+                                                    // Thêm lesson tiếp theo sau khi lesson hiện tại thành công
+                                                    addLessonSequentially(index + 1)
+                                                }
+                                            )
+                                        }
                                     }
 
-                                    val lesson = lessonsArray.getJSONObject(index)
-                                    val titleLessonOriginal = lesson.getString("title_lesson")
-                                    val contentLesson = lesson.getString("content_lesson")
-                                    val duration = lesson.getString("duration")
-                                    val contentLessonObj = JSONObject()
-                                    contentLessonObj.put("content_lession", contentLesson)
-
-                                    viewModel.addLesson(
-                                        lessons(
-                                            null,
-                                            id_course = courseId,
-                                            title_lesson = titleLessonOriginal.trim(),
-                                            content_lesson = contentLessonObj.toString(),
-                                            duration = duration.toIntOrNull() ?: 0
-                                        ),
-                                        onSuccess = {
-                                            // Thêm lesson tiếp theo sau khi lesson hiện tại thành công
-                                            addLessonSequentially(index + 1)
-                                        }
-                                    )
+                                    // Bắt đầu thêm từ lesson đầu tiên
+                                    addLessonSequentially(0)
                                 }
-
-                                // Bắt đầu thêm từ lesson đầu tiên
-                                addLessonSequentially(0)
-                            }
-                        )
+                            )
+                        }
                     }
                 }
+                else
+                {
+                    Log.d("ChatScreen", "Không có tiêu đề hoặc mô tả khóa học")
+                }
+
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -385,10 +395,15 @@ fun ChatScreen(
                             // Log JSON data cho developer (chỉ trong debug mode)
                             geminiService.getFinalExport()?.let { jsonData ->
                                 fullPrompt = jsonData
+                                geminiService.getCourseImageUrl()?.let { imageUrl ->
+                                    fullimage = imageUrl
+                                }
                                 shouldCallGemini = true
                             }
 
+
                         } catch (e: Exception) {
+                            Log.d("ChatError", "Error: ${e.message}")
                             val errorMessage = ChatMessage(
                                 message = "Xin lỗi, đã xảy ra lỗi, vui lòng thử lại.",
                                 isUser = false,

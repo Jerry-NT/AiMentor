@@ -206,13 +206,6 @@ private fun defaultMenuItems(navController: NavController): List<MenuItem> {
             icon = Icons.Default.AccountBox,
             onClick = { navController.navigate("admin_user_invoices") }
         )
-        ,
-        MenuItem(
-            id = "user_management_8",
-            title = "Quản lý câu hỏi",
-            icon = Icons.Default.AccountBox,
-            onClick = { navController.navigate("admin_question") }
-        )
 
     )
 }
